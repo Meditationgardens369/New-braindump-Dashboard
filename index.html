@@ -358,7 +358,21 @@
     background: var(--bg-2); border: 1px solid var(--amber);
     border-radius: 12px; padding: 22px; max-width: 380px; width: 100%;
   }
+  .popover.wide { max-width: 520px; }
   .popover h3 { font-family: var(--serif); font-size: 19px; margin-bottom: 12px; }
+  .sync-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 4px 0 14px; font-size: 12px; color: var(--text-dim); }
+  .sync-bar span { flex: 1; min-width: 160px; }
+  .sync-bar.synced { border-color: rgba(107,143,113,0.5); }
+  .sync-bar.synced b { color: var(--sage); }
+  .sync-status { font-size: 11px; font-variant: normal; letter-spacing: 0; color: var(--text-dim); font-family: var(--sans); font-style: italic; margin-left: 8px; }
+  .hist-list { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .hist-row { display: flex; align-items: center; gap: 10px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .hist-main { flex: 1; min-width: 0; cursor: pointer; }
+  .hist-main:hover .hist-label { color: var(--amber); }
+  .hist-label { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-meta { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+  .hist-del { padding: 6px 10px; min-height: 36px; }
+  .hist-del:hover { border-color: var(--q1); }
   .popover .pv-row { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 8px; }
   .popover .pv-detail { color: var(--text-dim); font-size: 14px; margin: 10px 0; font-style: italic; }
   .popover .close-x { float: right; cursor: pointer; color: var(--text-dim); font-size: 20px; line-height: 1; }
@@ -462,6 +476,7 @@
     <button data-owner="Adam">Adam</button>
     <button data-owner="Brigitte">Brigitte</button>
   </div>
+  <button class="icon-btn" id="historyBtn">📚 History</button>
   <button class="icon-btn" id="newSessionBtn">+ New</button>
   <button class="icon-btn" id="shareBtn">🔗 Share</button>
   <button class="icon-btn subtle" id="keyBtn" title="API key settings">🔑</button>
@@ -565,6 +580,13 @@
    CONSTANTS & STATE
    ============================================================ */
 const API_KEY_STORAGE = "bdp_api_key";
+const SESSIONS_STORAGE = "bdp_sessions";
+const FAMILY_CODE_STORAGE = "bdp_family_code";
+
+// Cross-device sync (Supabase). Anon key is safe to ship client-side — it is
+// protected by Row Level Security. Sessions are scoped by the shared family code.
+const SUPABASE_URL = "https://mfyykvrwukchowlxywnz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meXlrdnJ3dWtjaG93bHh5d256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjYxOTEsImV4cCI6MjA5MzMwMjE5MX0.8Nq6syVG0mNBpgAaGzLvrZV2z00CxlUJAUFLTf2dshw";
 const MODEL = "claude-sonnet-4-6";
 
 const SYSTEM_PROMPT = `You are an AI Chief of Staff for Adam and Brigitte, a couple living in Portugal managing a family, a healing music project, an AI automation business, and household life together. You receive raw voice note transcripts and turn them into structured planning data.
@@ -624,6 +646,8 @@ When suggesting a day, spread tasks across the 21-day window. Do not pile everyt
 
 let state = {
   data: null,            // parsed JSON response
+  sessionId: null,       // unique id for history
+  savedAt: null,         // timestamp first saved
   sessionDate: "",
   ownerFilter: "all",    // all | Adam | Brigitte | Shared
   viewMode: "covey",     // covey | para
@@ -674,11 +698,232 @@ function showToast(msg){
 }
 
 /* ============================================================
+   CROSS-DEVICE SYNC (Supabase, shared family code)
+   ============================================================ */
+function getFamilyCode(){ return localStorage.getItem(FAMILY_CODE_STORAGE) || ""; }
+function setFamilyCodeStored(code){
+  if(code) localStorage.setItem(FAMILY_CODE_STORAGE, code);
+  else localStorage.removeItem(FAMILY_CODE_STORAGE);
+}
+function sbHeaders(extra){
+  return Object.assign({
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json"
+  }, extra || {});
+}
+async function cloudPull(){
+  const code = getFamilyCode(); if(!code) return [];
+  const url = `${SUPABASE_URL}/rest/v1/brain_dump_sessions?family_code=eq.${encodeURIComponent(code)}&select=payload&order=saved_at.desc`;
+  const res = await fetch(url, { headers: sbHeaders() });
+  if(!res.ok) throw new Error("pull " + res.status);
+  const rows = await res.json();
+  return rows.map(r => r.payload).filter(Boolean);
+}
+async function cloudPush(entry){
+  const code = getFamilyCode(); if(!code || !entry || !entry.id) return;
+  const row = { family_code: code, session_id: entry.id, saved_at: entry.savedAt || Date.now(), payload: entry };
+  const url = `${SUPABASE_URL}/rest/v1/brain_dump_sessions?on_conflict=family_code,session_id`;
+  await fetch(url, {
+    method: "POST",
+    headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([row])
+  });
+}
+async function cloudDelete(id){
+  const code = getFamilyCode(); if(!code) return;
+  const url = `${SUPABASE_URL}/rest/v1/brain_dump_sessions?family_code=eq.${encodeURIComponent(code)}&session_id=eq.${encodeURIComponent(id)}`;
+  await fetch(url, { method: "DELETE", headers: sbHeaders({ "Prefer": "return=minimal" }) });
+}
+// debounce pushes so rapid state changes (tab/filter switches) don't spam the network
+let _pushTimer = null;
+function schedulePush(entry){
+  if(!getFamilyCode()) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(() => { cloudPush(entry).catch(e => console.warn("cloud push failed", e)); }, 1200);
+}
+// pull cloud sessions, merge with local (newest savedAt wins), persist, return merged list
+async function refreshFromCloud(){
+  if(!getFamilyCode()) return loadSessions();
+  const cloud = await cloudPull();
+  const byId = {};
+  [...loadSessions(), ...cloud].forEach(s => {
+    if(!s || !s.id) return;
+    const ex = byId[s.id];
+    if(!ex || (s.savedAt || 0) >= (ex.savedAt || 0)) byId[s.id] = s;
+  });
+  let merged = Object.values(byId).sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
+  if(merged.length > 100) merged.length = 100;
+  saveSessions(merged);
+  return merged;
+}
+async function setupSync(){
+  const cur = getFamilyCode();
+  const code = prompt(
+    "Family Code — both of you type the SAME code on each device to share your brain dumps.\n\n" +
+    "Pick something only you two know (e.g. adam-brigitte-2026). Leave blank to turn sync off.",
+    cur || ""
+  );
+  if(code === null) return; // cancelled
+  const clean = code.trim().toLowerCase().replace(/\s+/g, "-");
+  if(!clean){ setFamilyCodeStored(""); showToast("Sync turned off"); openHistory(); return; }
+  setFamilyCodeStored(clean);
+  showToast("Syncing…");
+  try {
+    // push every local session up so the other device can see them
+    for(const s of loadSessions()) await cloudPush(s);
+    // pull anything the other device already added
+    await refreshFromCloud();
+    showToast("Synced ✓");
+  } catch(e){
+    console.warn("Initial sync failed", e);
+    showToast("Sync saved — will retry");
+  }
+  openHistory();
+}
+
+/* ============================================================
+   SESSION HISTORY (localStorage + optional cloud)
+   ============================================================ */
+function loadSessions(){
+  try { return JSON.parse(localStorage.getItem(SESSIONS_STORAGE) || "[]"); }
+  catch(_){ return []; }
+}
+function saveSessions(list){
+  try { localStorage.setItem(SESSIONS_STORAGE, JSON.stringify(list)); }
+  catch(e){ console.warn("Could not save history (storage full?)", e); }
+}
+function upsertCurrentSession(){
+  if(!state.data || !state.sessionId) return;
+  const list = loadSessions();
+  const entry = {
+    id: state.sessionId,
+    savedAt: state.savedAt || Date.now(),
+    sessionDate: state.sessionDate,
+    label: (state.data.oneThing && state.data.oneThing.trim()) || "Brain dump",
+    taskCount: (state.data.tasks || []).length,
+    data: state.data,
+    startDate: state.startDate,
+    endDate: state.endDate,
+    done: state.done
+  };
+  const idx = list.findIndex(s => s.id === entry.id);
+  if(idx >= 0){ entry.savedAt = list[idx].savedAt; list[idx] = entry; }
+  else { list.unshift(entry); }
+  // newest first, cap to 100 to avoid unbounded growth
+  list.sort((a,b)=> (b.savedAt||0) - (a.savedAt||0));
+  if(list.length > 100) list.length = 100;
+  saveSessions(list);
+  schedulePush(entry); // push to cloud if a family code is set (debounced)
+}
+function deleteSession(id){
+  saveSessions(loadSessions().filter(s => s.id !== id));
+  cloudDelete(id).catch(e => console.warn("cloud delete failed", e));
+}
+function fmtSaved(ts){
+  if(!ts) return "";
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month:"short", day:"numeric" }) + " · " +
+         d.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
+}
+function openSession(id){
+  const s = loadSessions().find(x => x.id === id);
+  if(!s) return;
+  state.data = s.data;
+  state.sessionId = s.id;
+  state.savedAt = s.savedAt;
+  state.sessionDate = s.sessionDate;
+  state.startDate = s.startDate;
+  state.endDate = s.endDate;
+  state.done = s.done || {};
+  state.ownerFilter = "all";
+  state.viewMode = "covey";
+  state.activeTab = "braindump";
+  state.selectedDay = s.startDate;
+  closePopover();
+  renderDashboard();
+  writeHash();
+  showScreen("dashboard");
+  window.scrollTo(0,0);
+}
+function historyListHTML(list){
+  if(!list.length){
+    return `<p style="color:var(--text-dim);font-size:14px;margin-top:6px;">No saved entries yet. Process a brain dump and it'll be saved here automatically.</p>`;
+  }
+  return `<div class="hist-list">` + list.map(s => `
+    <div class="hist-row">
+      <div class="hist-main" data-open="${esc(s.id)}">
+        <div class="hist-label">${esc(s.label)}</div>
+        <div class="hist-meta">${esc(fmtLong(s.sessionDate))} · ${s.taskCount} task${s.taskCount===1?'':'s'} · saved ${esc(fmtSaved(s.savedAt))}</div>
+      </div>
+      <button class="icon-btn hist-del" data-del="${esc(s.id)}" title="Delete entry">🗑</button>
+    </div>`).join("") + `</div>`;
+}
+function syncBarHTML(){
+  const code = getFamilyCode();
+  if(code){
+    return `<div class="sync-bar synced">
+      <span>🔗 Synced as <b>${esc(code)}</b> — visible on any device using this code.</span>
+      <button class="icon-btn" id="syncBtn">Change</button>
+    </div>`;
+  }
+  return `<div class="sync-bar">
+    <span>📱 Saved on this device only. Set a shared code so Brigitte sees these too.</span>
+    <button class="icon-btn" id="syncBtn">Set up sync</button>
+  </div>`;
+}
+async function openHistory(){
+  const mount = $("#popoverMount");
+  const code = getFamilyCode();
+  // initial render (local cache) so the modal opens instantly
+  mount.innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover wide">
+      <span class="close-x" id="popClose">×</span>
+      <h3>Past entries ${code ? '<span class="sync-status" id="syncStatus">syncing…</span>' : ''}</h3>
+      ${syncBarHTML()}
+      <div id="histBody">${historyListHTML(loadSessions())}</div>
+    </div>
+  </div>`;
+  wireHistory(mount);
+
+  // if synced, refresh from cloud then re-render the list
+  if(code){
+    try {
+      const merged = await refreshFromCloud();
+      const body = $("#histBody"); if(body) body.innerHTML = historyListHTML(merged);
+      const st = $("#syncStatus"); if(st) st.remove();
+      wireHistory(mount);
+    } catch(e){
+      console.warn("History cloud refresh failed", e);
+      const st = $("#syncStatus"); if(st) st.textContent = "offline";
+    }
+  }
+}
+function wireHistory(mount){
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
+  const sb = $("#syncBtn"); if(sb) sb.addEventListener("click", setupSync);
+  mount.querySelectorAll("[data-open]").forEach(b =>
+    b.addEventListener("click", () => openSession(b.dataset.open)));
+  mount.querySelectorAll("[data-del]").forEach(b =>
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      const where = getFamilyCode() ? "everywhere it's synced" : "from this device";
+      if(confirm("Delete this saved entry? This removes it " + where + ".")){
+        deleteSession(b.dataset.del);
+        openHistory();
+      }
+    }));
+}
+
+/* ============================================================
    STATE ENCODING (URL HASH)
    ============================================================ */
 function encodeState(){
   const payload = {
     data: state.data,
+    sessionId: state.sessionId,
+    savedAt: state.savedAt,
     sessionDate: state.sessionDate,
     ownerFilter: state.ownerFilter,
     viewMode: state.viewMode,
@@ -696,6 +941,7 @@ function encodeState(){
 function writeHash(){
   if(!state.data) return;
   history.replaceState(null, "", "#state=" + encodeState());
+  upsertCurrentSession();
 }
 function loadFromHash(){
   const h = window.location.hash;
@@ -705,6 +951,8 @@ function loadFromHash(){
     const json = decodeURIComponent(escape(atob(m[1])));
     const payload = JSON.parse(json);
     state.data = payload.data;
+    state.sessionId = payload.sessionId || ("s" + Date.now());
+    state.savedAt = payload.savedAt || Date.now();
     state.sessionDate = payload.sessionDate || todayISO();
     state.ownerFilter = payload.ownerFilter || "all";
     state.viewMode = payload.viewMode || "covey";
@@ -737,8 +985,11 @@ function showScreen(which){
 
 function boot(){
   const key = localStorage.getItem(API_KEY_STORAGE);
+  // if synced, quietly refresh the local cache from the cloud in the background
+  if(getFamilyCode()) refreshFromCloud().catch(e => console.warn("boot cloud refresh failed", e));
   if(loadFromHash()){
     renderDashboard();
+    upsertCurrentSession();
     showScreen("dashboard");
     return;
   }
@@ -874,6 +1125,8 @@ ${transcript}`;
 
     // initialise state
     state.data = parsed;
+    state.sessionId = "s" + Date.now();
+    state.savedAt = Date.now();
     state.sessionDate = parsed.sessionDate || today;
     state.startDate = start;
     state.endDate = end;
@@ -934,6 +1187,7 @@ $("#shareBtn").addEventListener("click", async ()=>{
     document.body.removeChild(ta);
   }
 });
+$("#historyBtn").addEventListener("click", openHistory);
 $("#newSessionBtn").addEventListener("click", ()=>{
   // clear hash but keep old link working (it's already encoded in whatever was copied)
   history.replaceState(null, "", window.location.pathname + window.location.search);
