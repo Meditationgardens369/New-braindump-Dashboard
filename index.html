@@ -441,12 +441,81 @@
   .setup-foot code { background: var(--bg-3); padding: 1px 6px; border-radius: 4px; }
 
   .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
     background: var(--sage); color: #1a1714; padding: 10px 20px; border-radius: 8px;
     font-size: 14px; font-weight: 600; z-index: 200; opacity: 0; transition: opacity 0.2s;
     pointer-events: none;
   }
   .toast.show { opacity: 1; }
+
+  /* ---------- Task edit affordance + drag ---------- */
+  .task-row { position: relative; }
+  .task-edit {
+    background: transparent; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px;
+    opacity: 0; transition: opacity 0.12s, color 0.12s; align-self: center; flex-shrink: 0;
+  }
+  .task-row:hover .task-edit, .task-edit:focus { opacity: 1; }
+  .task-edit:hover { color: var(--amber); }
+  .task-row[draggable=true] { cursor: grab; }
+  .task-row.dragging, .chip.dragging { opacity: 0.4; }
+  .drop-hover { outline: 2px dashed var(--amber); outline-offset: -2px; background: rgba(201,149,74,0.08); }
+  .chip[draggable=true] { cursor: grab; }
+  .add-task-btn { margin-left: 8px; }
+
+  /* ---------- Editor modal ---------- */
+  .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  .editor-grid .full { grid-column: 1 / -1; }
+  .editor-grid label { display: block; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .editor-grid select, .editor-grid input, .editor-grid textarea {
+    width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 9px 11px; font-size: 14px; font-family: var(--sans);
+  }
+  .editor-grid select:focus, .editor-grid input:focus, .editor-grid textarea:focus { outline: none; border-color: var(--amber); }
+  .editor-grid textarea { min-height: 64px; resize: vertical; }
+  .editor-actions { display: flex; gap: 10px; margin-top: 18px; align-items: center; }
+  .editor-actions .spacer { flex: 1; }
+  .btn-danger { background: transparent; border: 1px solid var(--q1); color: #e8a597; border-radius: 8px; padding: 10px 16px; cursor: pointer; min-height: 42px; font-family: var(--sans); }
+  .btn-danger:hover { background: rgba(184,92,74,0.15); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 16px; cursor: pointer; min-height: 42px; font-family: var(--sans); }
+  .pv-detail .edit-link { display:inline-block; margin-top:6px; }
+
+  /* ---------- AI assistant bar ---------- */
+  #assistantBar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px;
+    width: min(720px, calc(100% - 28px));
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(34,30,26,0.96); border: 1px solid var(--amber);
+    border-radius: 14px; padding: 8px; z-index: 90;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+  }
+  #assistantBar input {
+    flex: 1; background: transparent; border: none; color: var(--text);
+    font-size: 14px; padding: 8px 6px; font-family: var(--sans); min-width: 0;
+  }
+  #assistantBar input:focus { outline: none; }
+  #assistantBar .btn-primary { padding: 10px 18px; min-height: 42px; }
+  #assistantBar.busy { opacity: 0.7; pointer-events: none; }
+  .mic-btn {
+    background: var(--bg-3); border: 1px solid var(--border); color: var(--text);
+    width: 42px; height: 42px; border-radius: 10px; font-size: 18px; cursor: pointer; flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .mic-btn:hover { border-color: var(--amber); }
+  @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(184,92,74,0.6); } 50% { box-shadow: 0 0 0 8px rgba(184,92,74,0); } }
+  .mic-btn.listening { background: var(--q1); border-color: var(--q1); animation: micPulse 1.2s infinite; }
+
+  /* ---------- Assistant preview modal ---------- */
+  .op-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; max-height: 50vh; overflow-y: auto; }
+  .op-item { display: flex; gap: 10px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; font-size: 13px; align-items: flex-start; }
+  .op-item .op-ic { flex-shrink: 0; }
+  .op-add { border-left: 3px solid var(--sage); }
+  .op-update { border-left: 3px solid var(--q2); }
+  .op-delete { border-left: 3px solid var(--q1); }
+  .op-meta { border-left: 3px solid var(--amber); }
+  .op-summary { font-family: var(--serif); font-style: italic; color: var(--text); margin: 6px 0 2px; font-size: 15px; }
+  .assistant-spin { display:flex; align-items:center; gap:10px; color: var(--text-dim); font-size: 13px; font-style: italic; padding: 4px; }
+  .assistant-spin .spinner { width:18px; height:18px; border-width:2px; margin:0; }
 
   .key-indicator { font-size: 12px; color: var(--text-dim); }
 
@@ -461,7 +530,10 @@
     .cal-cell.empty { display: none; }
     .planner-cols { grid-template-columns: 1fr; }
     .container { padding: 18px 14px 80px; }
+    .editor-grid { grid-template-columns: 1fr; }
   }
+  /* keep dashboard content clear of the fixed assistant bar */
+  #dashboard .container { padding-bottom: 96px; }
 </style>
 </head>
 <body>
@@ -568,6 +640,14 @@
     <div id="tab-calendar" class="tab-pane hidden"></div>
     <div id="tab-planner" class="tab-pane hidden"></div>
   </div>
+</div>
+
+<!-- AI ASSISTANT BAR -->
+<div id="assistantBar" class="hidden">
+  <button id="micBtn" class="mic-btn" title="Speak a change">🎤</button>
+  <input id="assistantInput" type="text" autocomplete="off"
+         placeholder="Tell the assistant… e.g. “move the proposal to Friday” or “add task: call plumber tomorrow”">
+  <button id="assistantSend" class="btn-primary">Send</button>
 </div>
 
 <div id="popoverMount"></div>
@@ -981,6 +1061,7 @@ function showScreen(which){
   $("#newSessionBtn").classList.toggle("hidden", !onDash);
   $("#shareBtn").classList.toggle("hidden", !onDash);
   $("#ownerToggle").classList.toggle("hidden", !onDash);
+  $("#assistantBar").classList.toggle("hidden", !onDash);
 }
 
 function boot(){
@@ -1254,7 +1335,7 @@ function toneEmoji(text){
 
 function taskRowHTML(task){
   const done = !!state.done[task.id];
-  return `<div class="task-row ${done?'done':''}" data-tid="${esc(task.id)}">
+  return `<div class="task-row ${done?'done':''}" data-tid="${esc(task.id)}" draggable="true" data-drag-task="${esc(task.id)}">
     <input type="checkbox" class="task-check" ${done?'checked':''}>
     <div class="task-main">
       <div class="task-title">${esc(task.title)}</div>
@@ -1265,6 +1346,7 @@ function taskRowHTML(task){
         ${task.deadlineHint && task.deadlineHint!=="no deadline" ? `<span class="badge">${esc(task.deadlineHint)}</span>`:""}
       </div>
     </div>
+    <button class="task-edit" data-edit="${esc(task.id)}" title="Edit task">✎</button>
   </div>`;
 }
 
@@ -1292,10 +1374,13 @@ function renderBrainDump(){
     </div>`;
   }
 
-  // View switch
+  // View switch + add task
   html += `<div class="section-title">
     ${state.viewMode==="covey" ? "Priorities" : "PARA"}
-    <button class="icon-btn view-switch" id="viewSwitchBtn">${state.viewMode==="covey" ? "Switch to PARA view" : "Switch to Covey grid"}</button>
+    <span class="view-switch" style="display:flex;gap:8px;">
+      <button class="icon-btn" id="addTaskBtn">+ Add task</button>
+      <button class="icon-btn" id="viewSwitchBtn">${state.viewMode==="covey" ? "PARA view" : "Covey grid"}</button>
+    </span>
   </div>`;
 
   if(state.viewMode==="covey"){
@@ -1336,6 +1421,14 @@ function renderBrainDump(){
     writeHash();
   });
 
+  // wire add task
+  const at = $("#addTaskBtn", pane);
+  if(at) at.addEventListener("click", ()=> openTaskEditor(null));
+
+  // wire edit buttons
+  $all("[data-edit]", pane).forEach(b=>
+    b.addEventListener("click", e=>{ e.stopPropagation(); openTaskEditor(b.dataset.edit); }));
+
   // wire checkboxes
   $all(".task-check", pane).forEach(cb=>{
     cb.addEventListener("change", e=>{
@@ -1364,7 +1457,7 @@ function renderCoveyGrid(tasks){
     const items = tasks.filter(t=>Number(t.coveyQ)===qd.q);
     return `<div class="quad ${qd.cls}">
       <div class="quad-head"><span>${qd.title}</span><span class="q-sub">Q${qd.q} · ${qd.sub}</span></div>
-      <div class="quad-body">
+      <div class="quad-body" data-drop-q="${qd.q}">
         ${items.length ? items.map(taskRowHTML).join("") : `<div class="quad-empty">Nothing here.</div>`}
       </div>
     </div>`;
@@ -1386,7 +1479,7 @@ function renderParaView(tasks){
         <span>${s.label}</span>
         <span class="count badge">${items.length}</span>
       </div>
-      <div class="para-body">
+      <div class="para-body" data-drop-para="${s.key}">
         ${items.length ? items.map(taskRowHTML).join("") : `<div class="quad-empty">Nothing here.</div>`}
       </div>
     </div>`;
@@ -1460,7 +1553,7 @@ function renderCalendar(){
     const items = calendarItemsFor(iso).filter(passesCalFilter);
     const visible = items.slice(0,3);
     const overflow = items.length - visible.length;
-    cells += `<div class="cal-cell ${iso===today?'today':''}" data-day="${iso}">
+    cells += `<div class="cal-cell ${iso===today?'today':''}" data-day="${iso}" data-drop-day="${iso}">
       <div class="cal-date"><span>${dayName(iso)}</span><span class="num">${dayNum(iso)}</span></div>
       ${visible.map(it=>chipHTML(it)).join("")}
       ${overflow>0 ? `<span class="more-link" data-expand="${iso}">+${overflow} more</span>`:""}
@@ -1498,7 +1591,9 @@ function renderCalendar(){
 function chipHTML(it){
   const flag = it.type==="deadline" ? `<span class="flag">🔴 </span>` : "";
   const title = it.title.length>25 ? it.title.slice(0,24)+"…" : it.title;
-  return `<div class="chip owner-${esc(it.owner)}" data-id="${esc(it.id)}" data-day="${esc(it.day||'')}">${flag}${esc(title)}</div>`;
+  // only task chips are draggable (events/deadlines have no suggestedDay to move)
+  const drag = it.isEvent ? "" : ` draggable="true" data-drag-task="${esc(it.id)}"`;
+  return `<div class="chip owner-${esc(it.owner)}" data-id="${esc(it.id)}" data-day="${esc(it.day||'')}"${drag}>${flag}${esc(title)}</div>`;
 }
 function wireChip(cell){
   // chips inside a manually-expanded cell need their day attribute
@@ -1532,10 +1627,13 @@ function openTaskPopover(iso, id){
       </div>
       ${item.deadlineHint?`<div class="pv-row"><span class="badge">Deadline: ${esc(item.deadlineHint)}</span></div>`:""}
       ${item.detail?`<div class="pv-detail">${esc(item.detail)}</div>`:""}
+      ${!item.isEvent?`<div class="editor-actions"><button class="icon-btn" id="popEdit">✎ Edit task</button></div>`:""}
     </div>
   </div>`;
   $("#popClose").addEventListener("click", closePopover);
   $("#popBack").addEventListener("click", e=>{ if(e.target.id==="popBack") closePopover(); });
+  const pe = $("#popEdit");
+  if(pe) pe.addEventListener("click", ()=> openTaskEditor(item.id));
 }
 function closePopover(){ $("#popoverMount").innerHTML=""; }
 
@@ -1677,6 +1775,323 @@ function plannerColumnHTML(owner, cls, iso){
     ${body}
   </div>`;
 }
+
+/* ============================================================
+   TASK MUTATION HELPERS
+   ============================================================ */
+function getTask(id){ return ((state.data && state.data.tasks) || []).find(t => t.id === id); }
+function addTask(task){ state.data.tasks = state.data.tasks || []; state.data.tasks.push(task); }
+function removeTask(id){
+  if(!state.data) return;
+  state.data.tasks = (state.data.tasks || []).filter(t => t.id !== id);
+  (state.data.projects || []).forEach(p => { if(p.taskIds) p.taskIds = p.taskIds.filter(x => x !== id); });
+  if(state.done) delete state.done[id];
+}
+function commitChanges(){ renderActiveTab(); writeHash(); }
+
+/* ============================================================
+   TASK EDITOR MODAL
+   ============================================================ */
+function openTaskEditor(id){
+  if(!state.data) return;
+  const isNew = !id;
+  const src = isNew ? {
+    id: "t" + Date.now(),
+    title: "", detail: "", owner: "Adam", coveyQ: 2, para: "Project", project: "",
+    estimatedHours: 1, deadlineHint: "", suggestedDay: state.startDate, suggestedTimeBlock: "flexible", tags: []
+  } : getTask(id);
+  if(!src) return;
+  const t = Object.assign({ tags: [] }, src);
+  closePopover();
+  const days = dateRange();
+  const sel = (val, opts) => opts.map(o => `<option value="${o.v}" ${String(o.v)===String(val)?'selected':''}>${esc(o.l)}</option>`).join("");
+  const ownerOpts = sel(t.owner, [{v:"Adam",l:"Adam"},{v:"Brigitte",l:"Brigitte"},{v:"Shared",l:"Shared"}]);
+  const qOpts = sel(t.coveyQ, [{v:1,l:"Q1 · Do First"},{v:2,l:"Q2 · Schedule"},{v:3,l:"Q3 · Question / Delegate"},{v:4,l:"Q4 · Eliminate"}]);
+  const paraOpts = sel(t.para, [{v:"Project",l:"Project"},{v:"Area",l:"Area"},{v:"Resource",l:"Resource"},{v:"Archive",l:"Archive"}]);
+  const blockOpts = sel(t.suggestedTimeBlock, [{v:"morning",l:"Morning"},{v:"afternoon",l:"Afternoon"},{v:"evening",l:"Evening"},{v:"flexible",l:"Flexible"}]);
+  const dayOpts = `<option value="" ${!t.suggestedDay?'selected':''}>— unscheduled —</option>` +
+    days.map(d => `<option value="${d}" ${t.suggestedDay===d?'selected':''}>${esc(fmtLong(d))}</option>`).join("");
+
+  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover wide">
+      <span class="close-x" id="popClose">×</span>
+      <h3>${isNew ? "Add task" : "Edit task"}</h3>
+      <div class="editor-grid">
+        <div class="full"><label>Title</label><input id="edTitle" type="text" value="${esc(t.title)}" placeholder="What needs doing?"></div>
+        <div class="full"><label>Notes</label><textarea id="edDetail" placeholder="Any context…">${esc(t.detail||"")}</textarea></div>
+        <div><label>Owner</label><select id="edOwner">${ownerOpts}</select></div>
+        <div><label>Priority (Covey)</label><select id="edQ">${qOpts}</select></div>
+        <div><label>PARA</label><select id="edPara">${paraOpts}</select></div>
+        <div><label>Project</label><input id="edProject" type="text" value="${esc(t.project||"")}"></div>
+        <div><label>Day</label><select id="edDay">${dayOpts}</select></div>
+        <div><label>Time block</label><select id="edBlock">${blockOpts}</select></div>
+        <div><label>Est. hours</label><input id="edHours" type="number" min="0" step="0.25" value="${esc(t.estimatedHours)}"></div>
+        <div><label>Deadline hint</label><input id="edDeadline" type="text" value="${esc(t.deadlineHint||"")}" placeholder="e.g. this week"></div>
+      </div>
+      <div class="editor-actions">
+        ${isNew ? "" : `<button class="btn-danger" id="edDelete">Delete</button>`}
+        <span class="spacer"></span>
+        <button class="btn-ghost" id="edCancel">Cancel</button>
+        <button class="btn-primary" id="edSave">${isNew ? "Add task" : "Save"}</button>
+      </div>
+    </div>
+  </div>`;
+
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
+  $("#edCancel").addEventListener("click", closePopover);
+  $("#edSave").addEventListener("click", () => {
+    const changes = {
+      title: $("#edTitle").value.trim() || "Untitled task",
+      detail: $("#edDetail").value.trim(),
+      owner: $("#edOwner").value,
+      coveyQ: Number($("#edQ").value),
+      para: $("#edPara").value,
+      project: $("#edProject").value.trim(),
+      suggestedDay: $("#edDay").value,
+      suggestedTimeBlock: $("#edBlock").value,
+      estimatedHours: Math.max(0, Number($("#edHours").value) || 0),
+      deadlineHint: $("#edDeadline").value.trim() || "no deadline"
+    };
+    if(isNew) addTask(Object.assign(t, changes));
+    else Object.assign(getTask(id), changes);
+    closePopover();
+    commitChanges();
+    showToast(isNew ? "Task added ✓" : "Saved ✓");
+  });
+  const del = $("#edDelete");
+  if(del) del.addEventListener("click", () => {
+    if(confirm("Delete this task?")){
+      removeTask(id);
+      closePopover();
+      commitChanges();
+      showToast("Task deleted");
+    }
+  });
+  if(isNew) setTimeout(() => { const ti = $("#edTitle"); if(ti) ti.focus(); }, 30);
+}
+
+/* ============================================================
+   DRAG & DROP (move tasks between quadrants / PARA / days)
+   ============================================================ */
+let _dragTaskId = null;
+function dropZoneOf(target){ return target.closest && target.closest("[data-drop-q],[data-drop-para],[data-drop-day]"); }
+document.addEventListener("dragstart", e => {
+  const src = e.target.closest && e.target.closest("[data-drag-task]");
+  if(!src) return;
+  _dragTaskId = src.getAttribute("data-drag-task");
+  if(e.dataTransfer){ e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", _dragTaskId); } catch(_){} }
+  src.classList.add("dragging");
+});
+document.addEventListener("dragend", e => {
+  const src = e.target.closest && e.target.closest("[data-drag-task]"); if(src) src.classList.remove("dragging");
+  $all(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
+  _dragTaskId = null;
+});
+document.addEventListener("dragover", e => {
+  if(_dragTaskId == null) return;
+  const zone = dropZoneOf(e.target); if(!zone) return;
+  e.preventDefault();
+  if(e.dataTransfer) e.dataTransfer.dropEffect = "move";
+});
+document.addEventListener("dragenter", e => {
+  if(_dragTaskId == null) return;
+  const zone = dropZoneOf(e.target); if(zone) zone.classList.add("drop-hover");
+});
+document.addEventListener("dragleave", e => {
+  const zone = dropZoneOf(e.target);
+  if(zone && !zone.contains(e.relatedTarget)) zone.classList.remove("drop-hover");
+});
+document.addEventListener("drop", e => {
+  if(_dragTaskId == null) return;
+  const zone = dropZoneOf(e.target); if(!zone) return;
+  e.preventDefault();
+  const t = getTask(_dragTaskId);
+  if(t){
+    let moved = false;
+    if(zone.hasAttribute("data-drop-q")){ const nv = Number(zone.getAttribute("data-drop-q")); if(t.coveyQ !== nv){ t.coveyQ = nv; moved = true; } }
+    else if(zone.hasAttribute("data-drop-para")){ const nv = zone.getAttribute("data-drop-para"); if(t.para !== nv){ t.para = nv; moved = true; } }
+    else if(zone.hasAttribute("data-drop-day")){ const nv = zone.getAttribute("data-drop-day"); if(t.suggestedDay !== nv){ t.suggestedDay = nv; moved = true; } }
+    if(moved){ commitChanges(); showToast("Moved ✓"); }
+  }
+  $all(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
+  _dragTaskId = null;
+});
+
+/* ============================================================
+   AI ASSISTANT (voice/text → preview → apply)
+   ============================================================ */
+const ASSISTANT_SYSTEM = `You are an editing assistant for a personal task dashboard used by Adam and Brigitte, a couple in Portugal. You receive the current dashboard as JSON and a short instruction (often transcribed from speech, so it may be casual or slightly misheard). Translate the instruction into a list of edit operations. Return ONLY a single raw JSON object — no markdown, no code fences, no prose outside it:
+{
+  "summary": "one short plain-English sentence describing what you will change",
+  "operations": [ ... ]
+}
+Allowed operations:
+{ "op":"update_task", "id":"<existing task id>", "changes":{ one or more of: "title","detail","owner","coveyQ","para","project","estimatedHours","suggestedDay","suggestedTimeBlock","deadlineHint" } }
+{ "op":"add_task", "task":{ "title":..., "owner":..., "coveyQ":..., "para":..., "project":..., "estimatedHours":..., "suggestedDay":..., "suggestedTimeBlock":..., "deadlineHint":..., "detail":... } }
+{ "op":"delete_task", "id":"<existing task id>" }
+{ "op":"set_one_thing", "value":"<text>" }
+Rules:
+- Identify the task the user means by comparing their words to the provided task titles, and use that task's EXACT id.
+- Enums: owner is "Adam","Brigitte" or "Shared"; coveyQ is 1,2,3 or 4; para is "Project","Area","Resource" or "Archive"; suggestedTimeBlock is "morning","afternoon","evening" or "flexible".
+- All dates must be "YYYY-MM-DD" and fall within the calendar window. Resolve relative dates ("today","tomorrow","Friday","next week") using the provided today's date.
+- For a new task use sensible defaults: owner "Shared" unless implied, coveyQ 2, para "Project", estimatedHours 0.5, suggestedTimeBlock "flexible". Do not invent an id.
+- Only include operations the user actually asked for; keep changes minimal. If you cannot map the instruction to any operation, return an empty operations array and say why in summary.`;
+
+function setAssistantBusy(b){
+  $("#assistantBar").classList.toggle("busy", b);
+  $("#assistantSend").textContent = b ? "…" : "Send";
+}
+async function askAssistant(instruction, key){
+  const d = state.data;
+  const tasksBrief = (d.tasks || []).map(t => ({
+    id:t.id, title:t.title, owner:t.owner, coveyQ:t.coveyQ, para:t.para, project:t.project,
+    estimatedHours:t.estimatedHours, suggestedDay:t.suggestedDay, suggestedTimeBlock:t.suggestedTimeBlock,
+    deadlineHint:t.deadlineHint, detail:t.detail
+  }));
+  const ctx = { today: todayISO(), calendarWindow: { start: state.startDate, end: state.endDate }, oneThing: d.oneThing, tasks: tasksBrief };
+  const userMessage = `CURRENT DASHBOARD (JSON):\n${JSON.stringify(ctx)}\n\nUSER INSTRUCTION:\n${instruction}`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type":"application/json", "x-api-key":key, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
+    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: ASSISTANT_SYSTEM, messages: [{ role:"user", content: userMessage }] })
+  });
+  if(!res.ok) throw new Error("API " + res.status);
+  const json = await res.json();
+  let text = (json.content && json.content[0] && json.content[0].text) || "";
+  text = stripFences(text);
+  let parsed = null;
+  try { parsed = JSON.parse(text); }
+  catch(_){ const m = text.match(/\{[\s\S]*\}/); if(m){ try { parsed = JSON.parse(m[0]); } catch(e){} } }
+  return parsed;
+}
+async function runAssistant(){
+  if(!state.data){ showToast("Open a session first"); return; }
+  const instruction = $("#assistantInput").value.trim();
+  if(!instruction) return;
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if(!key){ showToast("Set your API key (🔑) first"); return; }
+  setAssistantBusy(true);
+  try {
+    const result = await askAssistant(instruction, key);
+    setAssistantBusy(false);
+    if(!result){ showToast("Couldn't read the reply — try again"); return; }
+    showAssistantPreview(instruction, result);
+  } catch(e){
+    setAssistantBusy(false);
+    console.error(e);
+    showToast("Assistant couldn't reach the API");
+  }
+}
+function prettyField(k){ return ({title:"Title",detail:"Notes",owner:"Owner",coveyQ:"Priority",para:"PARA",project:"Project",estimatedHours:"Hours",suggestedDay:"Day",suggestedTimeBlock:"Time"})[k] || k; }
+function prettyVal(k,v){ if(k==="suggestedDay" && v) return fmtLong(v); if(k==="coveyQ") return "Q"+v; if(k==="estimatedHours") return v+"h"; return String(v); }
+function opLabel(o){
+  if(o.op==="update_task"){
+    const t = getTask(o.id); const name = t ? t.title : o.id;
+    const parts = Object.entries(o.changes||{}).map(([k,v]) => `${prettyField(k)} → ${prettyVal(k,v)}`);
+    return { cls:"op-update", ic:"✎", text:`<b>${esc(name)}</b>: ${esc(parts.join(", "))}` };
+  }
+  if(o.op==="add_task"){ const tk=o.task||{}; return { cls:"op-add", ic:"＋", text:`Add <b>${esc(tk.title||"task")}</b> (${esc(tk.owner||"Shared")}, Q${esc(tk.coveyQ||2)}${tk.suggestedDay?`, ${esc(fmtLong(tk.suggestedDay))}`:""})` }; }
+  if(o.op==="delete_task"){ const t=getTask(o.id); return { cls:"op-delete", ic:"🗑", text:`Delete <b>${esc(t?t.title:o.id)}</b>` }; }
+  if(o.op==="set_one_thing"){ return { cls:"op-meta", ic:"★", text:`Set One Thing → <b>${esc(o.value||"")}</b>` }; }
+  return { cls:"op-meta", ic:"?", text:esc(JSON.stringify(o)) };
+}
+function showAssistantPreview(instruction, result){
+  const ops = (result && result.operations) || [];
+  let body;
+  if(!ops.length){
+    body = `<p style="color:var(--text-dim);font-size:14px;">${esc(result && result.summary ? result.summary : "I couldn't find a change to make from that. Try rephrasing.")}</p>`;
+  } else {
+    body = (result.summary ? `<div class="op-summary">${esc(result.summary)}</div>` : "") +
+      `<div class="op-list">` + ops.map(o => { const L = opLabel(o); return `<div class="op-item ${L.cls}"><span class="op-ic">${L.ic}</span><span>${L.text}</span></div>`; }).join("") + `</div>`;
+  }
+  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover wide">
+      <span class="close-x" id="popClose">×</span>
+      <h3>Assistant — review changes</h3>
+      <div style="font-size:12px;color:var(--text-dim);font-style:italic;margin-bottom:6px;">You said: “${esc(instruction)}”</div>
+      ${body}
+      <div class="editor-actions">
+        <span class="spacer"></span>
+        <button class="btn-ghost" id="apCancel">Cancel</button>
+        ${ops.length ? `<button class="btn-primary" id="apApply">Apply ${ops.length} change${ops.length===1?'':'s'}</button>` : ""}
+      </div>
+    </div>
+  </div>`;
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
+  $("#apCancel").addEventListener("click", closePopover);
+  const ap = $("#apApply");
+  if(ap) ap.addEventListener("click", () => {
+    applyOperations(ops);
+    closePopover();
+    $("#assistantInput").value = "";
+    commitChanges();
+    showToast("Done ✓");
+  });
+}
+function sanitizeChanges(ch){
+  const out = {};
+  const allow = ["title","detail","owner","coveyQ","para","project","estimatedHours","suggestedDay","suggestedTimeBlock","deadlineHint"];
+  Object.keys(ch || {}).forEach(k => { if(allow.includes(k)) out[k] = ch[k]; });
+  if(out.coveyQ != null) out.coveyQ = Math.min(4, Math.max(1, Number(out.coveyQ) || 2));
+  if(out.estimatedHours != null) out.estimatedHours = Math.max(0, Number(out.estimatedHours) || 0);
+  if(out.owner && !["Adam","Brigitte","Shared"].includes(out.owner)) delete out.owner;
+  if(out.para && !["Project","Area","Resource","Archive"].includes(out.para)) delete out.para;
+  if(out.suggestedTimeBlock && !["morning","afternoon","evening","flexible"].includes(out.suggestedTimeBlock)) delete out.suggestedTimeBlock;
+  return out;
+}
+function normalizeNewTask(tk){
+  tk = tk || {};
+  const clean = sanitizeChanges(tk);
+  return Object.assign({
+    id: "t" + Date.now() + Math.floor(Math.random()*1000),
+    title: "Untitled task", detail: "", owner: "Shared", coveyQ: 2, para: "Project", project: "",
+    estimatedHours: 0.5, deadlineHint: "no deadline", suggestedDay: "", suggestedTimeBlock: "flexible", tags: []
+  }, clean, { title: (tk.title || "Untitled task") });
+}
+function applyOperations(ops){
+  (ops || []).forEach(o => {
+    try {
+      if(o.op==="update_task"){ const t = getTask(o.id); if(t) Object.assign(t, sanitizeChanges(o.changes)); }
+      else if(o.op==="add_task"){ addTask(normalizeNewTask(o.task)); }
+      else if(o.op==="delete_task"){ removeTask(o.id); }
+      else if(o.op==="set_one_thing"){ state.data.oneThing = String(o.value || ""); }
+    } catch(e){ console.warn("operation failed", o, e); }
+  });
+}
+
+// voice input (Web Speech API — works in Chrome/Edge)
+function startVoice(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ showToast("Voice isn't supported here — try Chrome"); return; }
+  if(window._rec){ try { window._rec.stop(); } catch(_){} return; }
+  const rec = new SR();
+  window._rec = rec;
+  rec.lang = navigator.language || "en-US";
+  rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
+  const mic = $("#micBtn");
+  mic.classList.add("listening");
+  let finalText = "";
+  rec.onresult = e => {
+    let interim = "";
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const tr = e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalText += tr; else interim += tr;
+    }
+    $("#assistantInput").value = (finalText + interim).trim();
+  };
+  rec.onerror = ev => { if(ev.error !== "no-speech") showToast("Didn't catch that"); };
+  rec.onend = () => {
+    mic.classList.remove("listening");
+    window._rec = null;
+    if($("#assistantInput").value.trim()) runAssistant();
+  };
+  try { rec.start(); } catch(_){ mic.classList.remove("listening"); window._rec = null; }
+}
+$("#assistantSend").addEventListener("click", runAssistant);
+$("#assistantInput").addEventListener("keydown", e => { if(e.key === "Enter") runAssistant(); });
+$("#micBtn").addEventListener("click", startVoice);
 
 /* ============================================================
    INIT
