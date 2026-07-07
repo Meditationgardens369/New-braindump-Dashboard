@@ -417,6 +417,10 @@
   .task-block.q4 { background: rgba(122,115,106,0.85); }
   .task-block .tb-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .task-block .tb-hours { opacity: 0.85; font-size: 10px; }
+  .task-block { cursor: grab; touch-action: none; user-select: none; }
+  .task-block.dragging-block { cursor: grabbing; opacity: 0.9; z-index: 6; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+  .task-block .tb-resize { position: absolute; left: 0; right: 0; bottom: 0; height: 11px; cursor: ns-resize; }
+  .task-block .tb-resize::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 22px; height: 3px; transform: translateX(-50%); border-radius: 2px; background: rgba(255,255,255,0.4); }
   .empty-day { padding: 30px 18px; color: var(--text-dim); font-size: 13px; text-align: center; font-style: italic; }
 
   /* ---------- Loading ---------- */
@@ -830,6 +834,7 @@ function fmtLong(iso){
 }
 function dayName(iso){ return parseISO(iso).toLocaleDateString(undefined,{weekday:"short"}); }
 function dayNum(iso){ return parseISO(iso).getDate(); }
+function fmtHour(h){ const H=Math.floor(h), M=Math.round((h-H)*60); return String(H).padStart(2,"0")+":"+String(M).padStart(2,"0"); }
 
 function showToast(msg){
   const t = $("#toast");
@@ -1728,21 +1733,31 @@ function plannerTasksFor(iso, owner){
 }
 
 function layoutColumn(tasks){
-  // greedy place into time blocks, no overlap, return [{task, startHour, endHour}]
+  // returns [{task, start, end}]. Tasks with a numeric plannedStart are pinned
+  // exactly where the user placed them; the rest are auto-placed greedily.
   const placed = [];
-  // sort: morning, afternoon, evening, flexible; within, by coveyQ
-  const order = { morning:0, afternoon:1, evening:2, flexible:3 };
-  const sorted = tasks.slice().sort((a,b)=>{
-    const oa = order[a.suggestedTimeBlock] ?? 3, ob = order[b.suggestedTimeBlock] ?? 3;
-    if(oa!==ob) return oa-ob;
-    return (a.coveyQ||9)-(b.coveyQ||9);
-  });
-  // track occupied intervals
   const occupied = [];
   function fits(start, end){
     if(end>DAY_END) return false;
     return !occupied.some(iv=> start < iv.end && end > iv.start);
   }
+
+  // 1) pinned tasks (dragged/resized or set to an exact time)
+  tasks.filter(t => typeof t.plannedStart === "number").forEach(t=>{
+    const dur = Math.max(0.25, Number(t.estimatedHours)||0.5);
+    const start = Math.min(Math.max(DAY_START, t.plannedStart), DAY_END - 0.25);
+    const end = Math.min(DAY_END, start + dur);
+    occupied.push({start, end});
+    placed.push({ task:t, start, end });
+  });
+
+  // 2) auto-placed tasks: morning, afternoon, evening, flexible; then by coveyQ
+  const order = { morning:0, afternoon:1, evening:2, flexible:3 };
+  const sorted = tasks.filter(t => typeof t.plannedStart !== "number").sort((a,b)=>{
+    const oa = order[a.suggestedTimeBlock] ?? 3, ob = order[b.suggestedTimeBlock] ?? 3;
+    if(oa!==ob) return oa-ob;
+    return (a.coveyQ||9)-(b.coveyQ||9);
+  });
   sorted.forEach(t=>{
     const dur = Math.max(0.25, Number(t.estimatedHours)||0.5);
     let [ws, we] = blockWindow(t.suggestedTimeBlock);
@@ -1796,10 +1811,66 @@ function renderPlanner(){
     state.selectedDay = p.dataset.day;
     renderPlanner(); writeHash();
   }));
-  // wire blocks
-  $all(".task-block", pane).forEach(b=>b.addEventListener("click", ()=>{
-    openTaskPopover(state.selectedDay, b.dataset.id);
-  }));
+  // wire blocks — drag to move (start time), drag bottom edge to resize (duration), tap to open
+  $all(".task-block", pane).forEach(b => wirePlannerBlock(b));
+}
+
+const SNAP_PX = PX_PER_HOUR / 4; // 15-minute snap
+function wirePlannerBlock(block){
+  const id = block.dataset.id;
+  const handle = block.querySelector(".tb-resize");
+  const maxPx = (DAY_END - DAY_START) * PX_PER_HOUR;
+  let mode = null, startY = 0, origTop = 0, origHeight = 0, moved = false;
+
+  function onDown(e){
+    if(e.button && e.button !== 0) return;
+    mode = (e.target === handle) ? "resize" : "move";
+    startY = e.clientY;
+    origTop = parseFloat(block.style.top) || 0;
+    origHeight = parseFloat(block.style.height) || 22;
+    moved = false;
+    try { block.setPointerCapture(e.pointerId); } catch(_){}
+    block.classList.add("dragging-block");
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!mode) return;
+    const dy = e.clientY - startY;
+    if(Math.abs(dy) > 3) moved = true;
+    if(mode === "move"){
+      let top = origTop + dy;
+      top = Math.max(0, Math.min(top, maxPx - origHeight));
+      top = Math.round(top / SNAP_PX) * SNAP_PX;
+      block.style.top = top + "px";
+    } else {
+      let h = origHeight + dy;
+      h = Math.max(SNAP_PX, Math.round(h / SNAP_PX) * SNAP_PX);
+      const curTop = parseFloat(block.style.top) || 0;
+      h = Math.min(h, maxPx - curTop);
+      block.style.height = h + "px";
+    }
+  }
+  function onUp(e){
+    if(!mode) return;
+    try { block.releasePointerCapture(e.pointerId); } catch(_){}
+    block.classList.remove("dragging-block");
+    const wasMode = mode; mode = null;
+    if(!moved){ openTaskPopover(state.selectedDay, id); return; } // it was a tap
+    const t = getTask(id); if(!t) return;
+    const top = parseFloat(block.style.top) || 0;
+    const h = parseFloat(block.style.height) || 22;
+    // pin its start time (so it stays put after re-render)
+    t.plannedStart = Math.round((DAY_START + top / PX_PER_HOUR) * 4) / 4;
+    if(wasMode === "resize"){
+      t.estimatedHours = Math.max(0.25, Math.round(((h + 4) / PX_PER_HOUR) * 4) / 4);
+    }
+    commitChanges();
+    showToast(wasMode === "resize" ? "Duration updated ✓" : "Time updated ✓");
+  }
+  block.addEventListener("pointerdown", onDown);
+  block.addEventListener("pointermove", onMove);
+  block.addEventListener("pointerup", onUp);
+  block.addEventListener("pointercancel", onUp);
 }
 
 function plannerColumnHTML(owner, cls, iso){
@@ -1830,6 +1901,7 @@ function plannerColumnHTML(owner, cls, iso){
       return `<div class="task-block q${p.task.coveyQ||2}" data-id="${esc(p.task.id)}" style="top:${top}px;height:${height}px;left:0;right:0;">
         <div class="tb-title">${shared}${esc(p.task.title)}</div>
         <div class="tb-hours">${esc(p.task.estimatedHours)}h</div>
+        <div class="tb-resize" title="Drag to change duration"></div>
       </div>`;
     }).join("");
     body = `<div class="timeline">${slots}<div class="timeline-track">${blocks}</div></div>`;
@@ -2036,63 +2108,4 @@ function openTaskEditor(id){
   const days = dateRange();
   const sel = (val, opts) => opts.map(o => `<option value="${o.v}" ${String(o.v)===String(val)?'selected':''}>${esc(o.l)}</option>`).join("");
   const ownerOpts = sel(t.owner, [{v:"Adam",l:"Adam"},{v:"Brigitte",l:"Brigitte"},{v:"Shared",l:"Shared"}]);
-  const qOpts = sel(t.coveyQ, [{v:1,l:"Q1 · Do First"},{v:2,l:"Q2 · Schedule"},{v:3,l:"Q3 · Question / Delegate"},{v:4,l:"Q4 · Eliminate"}]);
-  const paraOpts = sel(t.para, [{v:"Project",l:"Project"},{v:"Area",l:"Area"},{v:"Resource",l:"Resource"},{v:"Archive",l:"Archive"}]);
-  const blockOpts = sel(t.suggestedTimeBlock, [{v:"morning",l:"Morning"},{v:"afternoon",l:"Afternoon"},{v:"evening",l:"Evening"},{v:"flexible",l:"Flexible"}]);
-  const dayOpts = `<option value="" ${!t.suggestedDay?'selected':''}>— unscheduled —</option>` +
-    days.map(d => `<option value="${d}" ${t.suggestedDay===d?'selected':''}>${esc(fmtLong(d))}</option>`).join("");
-
-  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack">
-    <div class="popover wide">
-      <span class="close-x" id="popClose">×</span>
-      <h3>${isNew ? "Add task" : "Edit task"}</h3>
-      <div class="editor-grid">
-        <div class="full"><label>Title</label><input id="edTitle" type="text" value="${esc(t.title)}" placeholder="What needs doing?"></div>
-        <div class="full"><label>Notes</label><textarea id="edDetail" placeholder="Any context…">${esc(t.detail||"")}</textarea></div>
-        <div><label>Owner</label><select id="edOwner">${ownerOpts}</select></div>
-        <div><label>Priority (Covey)</label><select id="edQ">${qOpts}</select></div>
-        <div><label>PARA</label><select id="edPara">${paraOpts}</select></div>
-        <div><label>Project</label><input id="edProject" type="text" value="${esc(t.project||"")}"></div>
-        <div><label>Day</label><select id="edDay">${dayOpts}</select></div>
-        <div><label>Time block</label><select id="edBlock">${blockOpts}</select></div>
-        <div><label>Est. hours</label><input id="edHours" type="number" min="0" step="0.25" value="${esc(t.estimatedHours)}"></div>
-        <div><label>Deadline hint</label><input id="edDeadline" type="text" value="${esc(t.deadlineHint||"")}" placeholder="e.g. this week"></div>
-      </div>
-      <div class="editor-actions">
-        ${isNew ? "" : `<button class="btn-danger" id="edDelete">Delete</button>`}
-        <span class="spacer"></span>
-        <button class="btn-ghost" id="edCancel">Cancel</button>
-        <button class="btn-primary" id="edSave">${isNew ? "Add task" : "Save"}</button>
-      </div>
-    </div>
-  </div>`;
-
-  $("#popClose").addEventListener("click", closePopover);
-  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
-  $("#edCancel").addEventListener("click", closePopover);
-  $("#edSave").addEventListener("click", () => {
-    const changes = {
-      title: $("#edTitle").value.trim() || "Untitled task",
-      detail: $("#edDetail").value.trim(),
-      owner: $("#edOwner").value,
-      coveyQ: Number($("#edQ").value),
-      para: $("#edPara").value,
-      project: $("#edProject").value.trim(),
-      suggestedDay: $("#edDay").value,
-      suggestedTimeBlock: $("#edBlock").value,
-      estimatedHours: Math.max(0, Number($("#edHours").value) || 0),
-      deadlineHint: $("#edDeadline").value.trim() || "no deadline"
-    };
-    if(isNew) addTask(Object.assign(t, changes));
-    else Object.assign(getTask(id), changes);
-    closePopover();
-    commitChanges();
-    showToast(isNew ? "Task added ✓" : "Saved ✓");
-  });
-  const del = $("#edDelete");
-  if(del) del.addEventListener("click", () => {
-    if(confirm("Delete this task?")){
-      removeTask(id);
-      closePopover();
-      commitChanges();
-      showToast("Task deleted")
+  const qOpts = sel(t.coveyQ, [{v:1,l:"Q1 · D
