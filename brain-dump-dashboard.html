@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Dump Dashboard</title>
+<style>
+  :root {
+    --bg: #1a1714;
+    --bg-2: #221e1a;
+    --bg-3: #2a251f;
+    --text: #f0ebe3;
+    --text-dim: #b3aa9c;
+    --amber: #c9954a;
+    --sage: #6b8f71;
+    --q1: #b85c4a;
+    --q2: #5a7a9e;
+    --q3: #c9954a;
+    --q4: #7a736a;
+    --grey: #7a736a;
+    --border: #3a342d;
+    --serif: 'Georgia', 'Times New Roman', serif;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    background-color: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.5;
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(26,23,20,0.85);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-family: var(--serif);
+    font-variant: small-caps;
+    letter-spacing: 0.18em;
+    font-size: 18px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .brand .dot { color: var(--amber); }
+  .header-date {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-family: var(--serif);
+    font-style: italic;
+  }
+  .header-spacer { flex: 1; }
+  .owner-toggle { display: flex; gap: 4px; background: var(--bg-3); border-radius: 8px; padding: 3px; }
+  .owner-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 32px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .owner-toggle button.active { background: var(--amber); color: #1a1714; font-weight: 600; }
+
+  .icon-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s, background 0.15s;
+    font-family: var(--sans);
+  }
+  .icon-btn:hover { border-color: var(--amber); }
+  .icon-btn.subtle { background: transparent; }
+
+  /* ---------- Setup / API key screen ---------- */
+  .center-screen {
+    max-width: 480px;
+    margin: 8vh auto;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .center-screen h1 {
+    font-family: var(--serif);
+    font-variant: small-caps;
+    letter-spacing: 0.1em;
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+  .center-screen p { color: var(--text-dim); margin-bottom: 24px; font-size: 14px; }
+  .field-label { display:block; text-align:left; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+  input[type=text], input[type=password], input[type=number], input[type=date], textarea {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: var(--sans);
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--amber); }
+  textarea { resize: vertical; min-height: 200px; line-height: 1.6; }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #1a1714;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 48px;
+    font-family: var(--sans);
+    transition: filter 0.15s;
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; }
+
+  /* ---------- Input panel ---------- */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 22px 80px; }
+  .input-panel { max-width: 720px; margin: 0 auto; }
+  .input-panel h2 {
+    font-family: var(--serif);
+    font-size: 22px;
+    margin-bottom: 4px;
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+  }
+  .input-panel .sub { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+  .row .field { flex: 1; min-width: 130px; }
+  .micro-note { font-size: 12px; color: var(--text-dim); margin-top: 14px; }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+    overflow-x: auto;
+  }
+  .tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 15px;
+    padding: 12px 18px;
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 44px;
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--amber); }
+
+  /* ---------- One Thing banner ---------- */
+  @keyframes warmPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201,149,74,0.0); }
+    50% { box-shadow: 0 0 36px 2px rgba(201,149,74,0.28); }
+  }
+  .one-thing {
+    background: linear-gradient(135deg, #3a2c18, #2e2516);
+    border: 1px solid var(--amber);
+    border-radius: 14px;
+    padding: 26px 28px;
+    margin-bottom: 24px;
+    animation: warmPulse 3.4s ease-in-out 2;
+  }
+  .one-thing .eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+  .one-thing h2 { font-family: var(--serif); font-size: 28px; line-height: 1.25; font-weight: 500; }
+  .one-thing .subtext { color: var(--text-dim); font-size: 13px; margin-top: 10px; }
+
+  /* ---------- Emotional check-in ---------- */
+  .emo-card {
+    background: rgba(107,143,113,0.12);
+    border: 1px solid rgba(107,143,113,0.4);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 28px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .emo-card .emoji { font-size: 26px; line-height: 1; }
+  .emo-card .text { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--text); }
+
+  /* ---------- Section headings ---------- */
+  .section-title {
+    font-family: var(--serif);
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 18px;
+    margin: 32px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .view-switch { margin-left: auto; }
+
+  /* ---------- Covey grid ---------- */
+  .covey-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .quad {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .quad-head { padding: 12px 16px; font-weight: 600; font-size: 14px; display:flex; justify-content: space-between; align-items:center; color: #1a1714; }
+  .quad-head .q-sub { font-weight: 400; font-size: 11px; opacity: 0.85; }
+  .quad.q1 .quad-head { background: var(--q1); }
+  .quad.q2 .quad-head { background: var(--q2); }
+  .quad.q3 .quad-head { background: var(--q3); }
+  .quad.q4 .quad-head { background: var(--q4); }
+  .quad-body { padding: 8px; flex: 1; min-height: 60px; }
+  .quad-empty { color: var(--text-dim); font-size: 13px; padding: 14px; font-style: italic; }
+
+  /* ---------- Task row ---------- */
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: 8px;
+    transition: background 0.12s;
+  }
+  .task-row:hover { background: var(--bg-3); }
+  .task-row.done .task-title { text-decoration: line-through; opacity: 0.5; }
+  .task-row.done { opacity: 0.7; }
+  .task-check {
+    width: 20px; height: 20px;
+    margin-top: 2px;
+    accent-color: var(--sage);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .task-main { flex: 1; min-width: 0; }
+  .task-title { font-size: 14px; }
+  .task-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .badge.owner-Adam { background: rgba(201,149,74,0.18); color: var(--amber); border-color: transparent; }
+  .badge.owner-Brigitte { background: rgba(107,143,113,0.2); color: var(--sage); border-color: transparent; }
+  .badge.owner-Shared { background: rgba(122,115,106,0.25); color: var(--text-dim); border-color: transparent; }
+  .badge.para { background: var(--bg-3); }
+  .badge.hours { background: var(--bg-3); }
+
+  /* ---------- PARA view ---------- */
+  .para-section { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; background: var(--bg-2); overflow: hidden; }
+  .para-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; cursor: pointer; user-select: none;
+    font-family: var(--serif); font-size: 16px; font-variant: small-caps; letter-spacing: 0.05em;
+  }
+  .para-head .count { margin-left: auto; font-family: var(--sans); font-variant: normal; }
+  .para-head .chev { transition: transform 0.15s; color: var(--text-dim); }
+  .para-section.collapsed .para-body { display: none; }
+  .para-section.collapsed .chev { transform: rotate(-90deg); }
+  .para-body { padding: 6px 8px 12px; }
+
+  /* ---------- Open loops ---------- */
+  .loop-item { display:flex; gap: 10px; padding: 10px 12px; align-items: flex-start; border-bottom: 1px solid var(--border); }
+  .loop-item:last-child { border-bottom: none; }
+  .loop-item .ic { color: var(--amber); }
+  .loops-wrap { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; }
+
+  /* ---------- Projects ---------- */
+  .proj-list { display: flex; flex-direction: column; gap: 8px; }
+  .proj-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+  }
+  .proj-name { font-size: 14px; }
+  .proj-item .count { margin-left: auto; font-size: 12px; color: var(--text-dim); }
+  .status-badge { font-size: 10px; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .status-active { background: rgba(107,143,113,0.22); color: var(--sage); }
+  .status-stalled { background: rgba(201,149,74,0.2); color: var(--amber); }
+  .status-upcoming { background: rgba(122,115,106,0.25); color: var(--text-dim); }
+
+  /* ---------- Calendar ---------- */
+  .cal-filters { display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .cal-daynames { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 6px; }
+  .cal-daynames span { font-size: 11px; color: var(--text-dim); text-align: center; text-transform: uppercase; letter-spacing: 0.08em; }
+  .cal-cell {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-height: 92px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cal-cell.empty { background: transparent; border-color: transparent; }
+  .cal-cell.today { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+  .cal-cell .cal-date { font-size: 12px; color: var(--text-dim); display:flex; justify-content: space-between; }
+  .cal-cell .cal-date .num { font-weight: 600; color: var(--text); }
+  .chip {
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-left: 3px solid transparent;
+  }
+  .chip.owner-Adam { background: rgba(201,149,74,0.16); border-left-color: var(--amber); }
+  .chip.owner-Brigitte { background: rgba(107,143,113,0.18); border-left-color: var(--sage); }
+  .chip.owner-Shared { background: rgba(122,115,106,0.22); border-left-color: var(--grey); }
+  .chip .flag { color: var(--q1); }
+  .more-link { font-size: 11px; color: var(--amber); cursor: pointer; padding: 2px 4px; }
+
+  /* popover */
+  .popover-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display:flex; align-items:center; justify-content:center; padding: 20px; }
+  .popover {
+    background: var(--bg-2); border: 1px solid var(--amber);
+    border-radius: 12px; padding: 22px; max-width: 380px; width: 100%;
+  }
+  .popover.wide { max-width: 520px; }
+  .popover h3 { font-family: var(--serif); font-size: 19px; margin-bottom: 12px; }
+  .sync-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 4px 0 14px; font-size: 12px; color: var(--text-dim); }
+  .sync-bar span { flex: 1; min-width: 160px; }
+  .sync-bar.synced { border-color: rgba(107,143,113,0.5); }
+  .sync-bar.synced b { color: var(--sage); }
+  .sync-status { font-size: 11px; font-variant: normal; letter-spacing: 0; color: var(--text-dim); font-family: var(--sans); font-style: italic; margin-left: 8px; }
+  .hist-list { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .hist-row { display: flex; align-items: center; gap: 10px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .hist-main { flex: 1; min-width: 0; cursor: pointer; }
+  .hist-main:hover .hist-label { color: var(--amber); }
+  .hist-label { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-meta { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+  .hist-del { padding: 6px 10px; min-height: 36px; }
+  .hist-del:hover { border-color: var(--q1); }
+  .popover .pv-row { display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .popover .pv-detail { color: var(--text-dim); font-size: 14px; margin: 10px 0; font-style: italic; }
+  .popover .close-x { float: right; cursor: pointer; color: var(--text-dim); font-size: 20px; line-height: 1; }
+
+  /* ---------- Day Planner ---------- */
+  .day-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 18px; }
+  .day-pill {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 14px; cursor: pointer;
+    white-space: nowrap; min-height: 44px; display:flex; flex-direction: column; align-items:center;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .day-pill .dnum { font-size: 18px; color: var(--text); font-family: var(--serif); }
+  .day-pill.active { border-color: var(--amber); background: rgba(201,149,74,0.12); }
+  .day-pill.active .dnum { color: var(--amber); }
+
+  .planner-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .planner-col { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .planner-col-head { padding: 12px 16px; font-weight: 600; color: #1a1714; display:flex; justify-content: space-between; align-items:center; }
+  .planner-col.adam .planner-col-head { background: var(--amber); }
+  .planner-col.brigitte .planner-col-head { background: var(--sage); }
+  .warn-banner { background: rgba(184,92,74,0.2); color: #e8a597; font-size: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+
+  .timeline { position: relative; padding: 10px 12px; }
+  .time-slot { display: flex; gap: 10px; height: 30px; align-items: flex-start; }
+  .time-label { font-size: 10px; color: var(--text-dim); width: 38px; flex-shrink: 0; text-align: right; padding-top: 0; transform: translateY(-5px); }
+  .time-line { flex: 1; border-top: 1px solid var(--border); height: 100%; }
+  .timeline-track { position: absolute; top: 10px; left: 60px; right: 12px; bottom: 10px; }
+  .task-block {
+    position: absolute;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    overflow: hidden;
+    color: var(--text);
+    border-left: 3px solid rgba(255,255,255,0.35);
+  }
+  .task-block.q1 { background: rgba(184,92,74,0.85); }
+  .task-block.q2 { background: rgba(90,122,158,0.85); }
+  .task-block.q3 { background: rgba(201,149,74,0.85); color:#1a1714; }
+  .task-block.q4 { background: rgba(122,115,106,0.85); }
+  .task-block .tb-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-block .tb-hours { opacity: 0.85; font-size: 10px; }
+  .task-block { cursor: grab; touch-action: none; user-select: none; }
+  .task-block.dragging-block { cursor: grabbing; opacity: 0.9; z-index: 6; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+  .task-block .tb-resize { position: absolute; left: 0; right: 0; bottom: 0; height: 11px; cursor: ns-resize; }
+  .task-block .tb-resize::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 22px; height: 3px; transform: translateX(-50%); border-radius: 2px; background: rgba(255,255,255,0.4); }
+  .empty-day { padding: 30px 18px; color: var(--text-dim); font-size: 13px; text-align: center; font-style: italic; }
+
+  /* ---------- Loading ---------- */
+  .spinner {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 3px solid rgba(201,149,74,0.25); border-top-color: var(--amber);
+    animation: spin 0.8s linear infinite; margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { text-align:center; color: var(--text-dim); font-size: 14px; margin-top: 14px; font-style: italic; font-family: var(--serif); }
+
+  /* ---------- Error card ---------- */
+  .error-card {
+    background: rgba(184,92,74,0.14); border: 1px solid var(--q1);
+    border-radius: 10px; padding: 14px 18px; color: #e8a597; font-size: 14px; margin-top: 16px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer { max-width: 720px; margin: 40px auto 0; padding: 0 22px; }
+  .setup-foot summary { cursor: pointer; color: var(--text-dim); font-size: 13px; padding: 8px 0; }
+  .setup-foot ol { color: var(--text-dim); font-size: 13px; margin: 8px 0 0 20px; line-height: 1.8; }
+  .setup-foot code { background: var(--bg-3); padding: 1px 6px; border-radius: 4px; }
+
+  .toast {
+    position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+    background: var(--sage); color: #1a1714; padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; z-index: 200; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ---------- Task edit affordance + drag ---------- */
+  .task-row { position: relative; }
+  .task-edit {
+    background: transparent; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px;
+    opacity: 0; transition: opacity 0.12s, color 0.12s; align-self: center; flex-shrink: 0;
+  }
+  .task-row:hover .task-edit, .task-edit:focus { opacity: 1; }
+  .task-edit:hover { color: var(--amber); }
+  .task-row[draggable=true] { cursor: grab; }
+  .task-row.dragging, .chip.dragging { opacity: 0.4; }
+  .drop-hover { outline: 2px dashed var(--amber); outline-offset: -2px; background: rgba(201,149,74,0.08); }
+  .chip[draggable=true] { cursor: grab; }
+  .add-task-btn { margin-left: 8px; }
+
+  /* ---------- Editor modal ---------- */
+  .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  .editor-grid .full { grid-column: 1 / -1; }
+  .editor-grid label { display: block; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .editor-grid select, .editor-grid input, .editor-grid textarea {
+    width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 9px 11px; font-size: 14px; font-family: var(--sans);
+  }
+  .editor-grid select:focus, .editor-grid input:focus, .editor-grid textarea:focus { outline: none; border-color: var(--amber); }
+  .editor-grid textarea { min-height: 64px; resize: vertical; }
+  .editor-actions { display: flex; gap: 10px; margin-top: 18px; align-items: center; }
+  .editor-actions .spacer { flex: 1; }
+  .btn-danger { background: transparent; border: 1px solid var(--q1); color: #e8a597; border-radius: 8px; padding: 10px 16px; cursor: pointer; min-height: 42px; font-family: var(--sans); }
+  .btn-danger:hover { background: rgba(184,92,74,0.15); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 16px; cursor: pointer; min-height: 42px; font-family: var(--sans); }
+  .pv-detail .edit-link { display:inline-block; margin-top:6px; }
+
+  /* ---------- AI assistant bar ---------- */
+  #assistantBar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px;
+    width: min(720px, calc(100% - 28px));
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(34,30,26,0.96); border: 1px solid var(--amber);
+    border-radius: 14px; padding: 8px; z-index: 90;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+  }
+  #assistantBar input {
+    flex: 1; background: transparent; border: none; color: var(--text);
+    font-size: 14px; padding: 8px 6px; font-family: var(--sans); min-width: 0;
+  }
+  #assistantBar input:focus { outline: none; }
+  #assistantBar .btn-primary { padding: 10px 18px; min-height: 42px; }
+  #assistantBar.busy { opacity: 0.7; pointer-events: none; }
+  .mic-btn {
+    background: var(--bg-3); border: 1px solid var(--border); color: var(--text);
+    width: 42px; height: 42px; border-radius: 10px; font-size: 18px; cursor: pointer; flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .mic-btn:hover { border-color: var(--amber); }
+  @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(184,92,74,0.6); } 50% { box-shadow: 0 0 0 8px rgba(184,92,74,0); } }
+  .mic-btn.listening { background: var(--q1); border-color: var(--q1); animation: micPulse 1.2s infinite; }
+
+  /* ---------- Assistant preview modal ---------- */
+  .op-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; max-height: 50vh; overflow-y: auto; }
+  .op-item { display: flex; gap: 10px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; font-size: 13px; align-items: flex-start; }
+  .op-item .op-ic { flex-shrink: 0; }
+  .op-add { border-left: 3px solid var(--sage); }
+  .op-update { border-left: 3px solid var(--q2); }
+  .op-delete { border-left: 3px solid var(--q1); }
+  .op-meta { border-left: 3px solid var(--amber); }
+  .op-summary { font-family: var(--serif); font-style: italic; color: var(--text); margin: 6px 0 2px; font-size: 15px; }
+  .assistant-spin { display:flex; align-items:center; gap:10px; color: var(--text-dim); font-size: 13px; font-style: italic; padding: 4px; }
+  .assistant-spin .spinner { width:18px; height:18px; border-width:2px; margin:0; }
+
+  /* ---------- Momentum tab ---------- */
+  .mo-hero {
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+    background: linear-gradient(135deg, #2a3320, #22281a);
+    border: 1px solid var(--sage); border-radius: 14px; padding: 20px 24px; margin-bottom: 8px;
+  }
+  .mo-hero-main { text-align: center; min-width: 90px; }
+  .mo-count { font-family: var(--serif); font-size: 46px; line-height: 1; color: var(--sage); }
+  .mo-count-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .mo-progress-wrap { flex: 1; min-width: 200px; }
+  .mo-progress-top { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+  .mo-bar { height: 12px; background: var(--bg-3); border-radius: 20px; overflow: hidden; }
+  .mo-bar-fill { height: 100%; background: linear-gradient(90deg, var(--sage), var(--amber)); border-radius: 20px; transition: width 0.4s ease; }
+  .mo-progress-sub { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+  .mo-empty { color: var(--text-dim); font-size: 14px; font-style: italic; background: var(--bg-2); border: 1px dashed var(--border); border-radius: 10px; padding: 16px 18px; }
+
+  .win-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .win-card { display: flex; gap: 10px; align-items: flex-start; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; position: relative; }
+  .win-card.done-task { border-left: 3px solid var(--sage); }
+  .win-ic { font-size: 16px; line-height: 1.3; }
+  .win-body { flex: 1; min-width: 0; }
+  .win-text { font-size: 14px; margin-bottom: 6px; }
+  .win-del { position: absolute; top: 6px; right: 6px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 5px; opacity: 0; }
+  .win-card:hover .win-del { opacity: 1; }
+  .win-del:hover { color: var(--q1); }
+
+  .next-list { display: flex; flex-direction: column; gap: 8px; }
+  .next-item { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+  .next-item:hover { border-color: var(--amber); }
+  .next-q { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; color: #1a1714; flex-shrink: 0; }
+  .next-q.q1 { background: var(--q1); } .next-q.q2 { background: var(--q2); } .next-q.q3 { background: var(--q3); } .next-q.q4 { background: var(--q4); }
+  .next-title { flex: 1; min-width: 0; font-size: 14px; }
+
+  .horizon-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .horizon-col { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .horizon-head { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .horizon-head .count { margin-left: auto; }
+  .goal-card { background: var(--bg-3); border: 1px solid var(--border); border-left: 3px solid var(--amber); border-radius: 9px; padding: 11px 13px; margin-bottom: 8px; cursor: pointer; }
+  .goal-card:hover { border-color: var(--amber); }
+  .goal-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .goal-detail { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+
+  .key-indicator { font-size: 12px; color: var(--text-dim); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 640px) {
+    .brand { font-size: 15px; letter-spacing: 0.1em; }
+    .header-date { display: none; }
+    .covey-grid { grid-template-columns: 1fr; }
+    .cal-daynames { display: none; }
+    .cal-grid { grid-template-columns: 1fr; }
+    .cal-cell { min-height: auto; }
+    .cal-cell.empty { display: none; }
+    .planner-cols { grid-template-columns: 1fr; }
+    .container { padding: 18px 14px 80px; }
+    .editor-grid { grid-template-columns: 1fr; }
+  }
+  /* keep dashboard content clear of the fixed assistant bar */
+  #dashboard .container { padding-bottom: 96px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="appHeader" class="hidden">
+  <div class="brand">Brain Dump<span class="dot"> · </span>Dashboard</div>
+  <div class="header-date" id="headerDate"></div>
+  <div class="header-spacer"></div>
+  <div class="owner-toggle" id="ownerToggle">
+    <button data-owner="all" class="active">Both</button>
+    <button data-owner="Adam">Adam</button>
+    <button data-owner="Brigitte">Brigitte</button>
+  </div>
+  <button class="icon-btn" id="historyBtn">📚 History</button>
+  <button class="icon-btn" id="newSessionBtn">+ New</button>
+  <button class="icon-btn" id="shareBtn">🔗 Share</button>
+  <button class="icon-btn subtle" id="keyBtn" title="API key settings">🔑</button>
+</header>
+
+<!-- API KEY SETUP SCREEN -->
+<div id="setupScreen" class="hidden">
+  <div class="center-screen">
+    <h1>Brain Dump Dashboard</h1>
+    <p>Enter your Anthropic API key to get started. It stays on this device only — it is never shared or put in any link.</p>
+    <label class="field-label" for="apiKeyInput">Anthropic API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+    <div style="margin-top:18px;">
+      <button class="btn-primary" id="saveKeyBtn">Save Key</button>
+    </div>
+    <p style="margin-top:18px;font-size:12px;">Get a key at <span style="color:var(--amber)">console.anthropic.com</span></p>
+  </div>
+</div>
+
+<!-- INPUT PANEL -->
+<div id="inputScreen" class="hidden">
+  <div class="container">
+    <div class="input-panel">
+      <h2>New Brain Dump</h2>
+      <div class="sub">Paste a voice note transcript or type what's on your mind. The AI sorts it into priorities, a calendar, and a daily plan.</div>
+
+      <label class="field-label" for="transcriptInput">Transcript / Brain Dump</label>
+      <textarea id="transcriptInput" placeholder="Paste your transcript or brain dump here…"></textarea>
+
+      <div class="row">
+        <div class="field">
+          <label class="field-label" for="adamHours">Adam's hours/day</label>
+          <input type="number" id="adamHours" value="4" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label class="field-label" for="brigitteHours">Brigitte's hours/day</label>
+          <input type="number" id="brigitteHours" value="3" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label class="field-label" for="startDate">Calendar start</label>
+          <input type="date" id="startDate">
+        </div>
+        <div class="field">
+          <label class="field-label" for="endDate">Calendar end</label>
+          <input type="date" id="endDate">
+        </div>
+      </div>
+
+      <div style="margin-top:22px;" id="processBtnWrap">
+        <button class="btn-primary" id="processBtn">Process →</button>
+      </div>
+
+      <div id="loadingWrap" class="hidden" style="margin-top:22px;">
+        <div class="spinner"></div>
+        <div class="loading-msg" id="loadingMsg">Reading your transcript…</div>
+      </div>
+
+      <div id="inputError"></div>
+
+      <div class="micro-note">Your API key stays on this device. The shareable link contains only your processed session data.</div>
+    </div>
+
+    <footer>
+      <details class="setup-foot" id="setupFoot">
+        <summary>How to host this yourself</summary>
+        <ol>
+          <li>Create a free GitHub account at github.com</li>
+          <li>Create a new repository called <code>brain-dump-dashboard</code></li>
+          <li>Upload this HTML file to the repo</li>
+          <li>Go to Settings → Pages → Source → main branch → Save</li>
+          <li>Your app will be live at: <code>https://[yourusername].github.io/brain-dump-dashboard</code></li>
+          <li>Bookmark that URL — it's yours forever</li>
+        </ol>
+      </details>
+    </footer>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+  <div class="container">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="braindump">📋 Brain Dump</button>
+      <button class="tab" data-tab="calendar">📅 Calendar</button>
+      <button class="tab" data-tab="planner">⏱ Day Planner</button>
+      <button class="tab" data-tab="momentum">🚀 Momentum</button>
+    </div>
+
+    <div id="tab-braindump" class="tab-pane"></div>
+    <div id="tab-calendar" class="tab-pane hidden"></div>
+    <div id="tab-planner" class="tab-pane hidden"></div>
+    <div id="tab-momentum" class="tab-pane hidden"></div>
+  </div>
+</div>
+
+<!-- AI ASSISTANT BAR -->
+<div id="assistantBar" class="hidden">
+  <button id="micBtn" class="mic-btn" title="Speak a change">🎤</button>
+  <input id="assistantInput" type="text" autocomplete="off"
+         placeholder="Tell the assistant… e.g. “move the proposal to Friday” or “add task: call plumber tomorrow”">
+  <button id="assistantSend" class="btn-primary">Send</button>
+</div>
+
+<div id="popoverMount"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   CONSTANTS & STATE
+   ============================================================ */
+const API_KEY_STORAGE = "bdp_api_key";
+const SESSIONS_STORAGE = "bdp_sessions";
+const FAMILY_CODE_STORAGE = "bdp_family_code";
+
+// Cross-device sync (Supabase). Anon key is safe to ship client-side — it is
+// protected by Row Level Security. Sessions are scoped by the shared family code.
+const SUPABASE_URL = "https://mfyykvrwukchowlxywnz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meXlrdnJ3dWtjaG93bHh5d256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjYxOTEsImV4cCI6MjA5MzMwMjE5MX0.8Nq6syVG0mNBpgAaGzLvrZV2z00CxlUJAUFLTf2dshw";
+const MODEL = "claude-sonnet-4-6";
+
+const SYSTEM_PROMPT = `You are an AI Chief of Staff for Adam and Brigitte, a couple living in Portugal managing a family, a healing music project, an AI automation business, and household life together. You receive raw voice note transcripts and turn them into structured planning data.
+Your job: extract every task, project, deadline, emotional note, and time reference from the transcript, then return a single valid JSON object. Do not include any text outside the JSON. Do not use markdown code fences. Return only raw JSON.
+The JSON must follow this exact schema:
+{
+  "sessionDate": "YYYY-MM-DD",
+  "emotionalCheckIn": "string — 1-3 sentences summarizing the emotional tone or state expressed",
+  "oneThing": "string — the single most important action item right now",
+  "tasks": [
+    {
+      "id": "string — unique short id e.g. t1, t2",
+      "title": "string — clear action verb + object",
+      "detail": "string — any context or notes, can be empty string",
+      "owner": "Adam" | "Brigitte" | "Shared",
+      "coveyQ": 1 | 2 | 3 | 4,
+      "para": "Project" | "Area" | "Resource" | "Archive",
+      "project": "string — project name this belongs to, or empty string",
+      "estimatedHours": number (0.25, 0.5, 1, 2, 3 etc — your best estimate based on task type),
+      "deadlineHint": "string — e.g. 'today', 'this week', 'end of month', 'no deadline', extracted from transcript",
+      "suggestedDay": "YYYY-MM-DD or empty string — your recommendation for when to schedule this",
+      "suggestedTimeBlock": "morning" | "afternoon" | "evening" | "flexible",
+      "tags": ["array", "of", "relevant", "tags"]
+    }
+  ],
+  "openLoops": [
+    {
+      "id": "string",
+      "description": "string — unresolved item, pending decision, or thing that was mentioned but not actioned"
+    }
+  ],
+  "calendarEvents": [
+    {
+      "id": "string",
+      "title": "string",
+      "date": "YYYY-MM-DD",
+      "timeHint": "morning" | "afternoon" | "evening" | "all-day",
+      "owner": "Adam" | "Brigitte" | "Shared",
+      "type": "task" | "deadline" | "event" | "reminder"
+    }
+  ],
+  "projects": [
+    {
+      "name": "string",
+      "status": "active" | "stalled" | "upcoming",
+      "taskIds": ["t1", "t2"]
+    }
+  ],
+  "wins": [
+    {
+      "id": "string — e.g. w1",
+      "text": "string — an accomplishment, milestone, or thing already DONE that the person mentions (past tense / with pride / 'we finished', 'I sent', 'we landed')",
+      "owner": "Adam" | "Brigitte" | "Shared"
+    }
+  ],
+  "goals": [
+    {
+      "id": "string — e.g. g1",
+      "title": "string — a bigger-picture objective beyond a single task; where they want to be",
+      "detail": "string — context, can be empty",
+      "owner": "Adam" | "Brigitte" | "Shared",
+      "horizonDays": 30 | 60 | 90 | 180
+    }
+  ]
+}
+Covey quadrant rules:
+Q1 = urgent + important (do today/tomorrow, has a deadline or is a crisis)
+Q2 = not urgent + important (schedule it, growth/relationship/planning work)
+Q3 = urgent + not important (question whether it really needs doing)
+Q4 = not urgent + not important (eliminate or ignore)
+When estimating hours, be realistic. A WhatsApp message = 0.25h. A video script = 2h. A client call = 1h. A full content piece = 3h.
+When suggesting a day, spread tasks across the 21-day window. Do not pile everything on day 1. Respect the deadlineHint field. Put Q1 tasks in the first 2 days. Q2 tasks spread across the week and beyond.
+Wins: capture anything the person describes as already accomplished or a milestone reached — these fuel a sense of momentum. If nothing is clearly done, return an empty array.
+Goals: capture medium/long-term aims (not single tasks). Assign horizonDays by scope: 30 = this month, 60 = about two months, 90 = this quarter, 180 = longer term. If none are expressed, return an empty array.`;
+
+let state = {
+  data: null,            // parsed JSON response
+  sessionId: null,       // unique id for history
+  savedAt: null,         // timestamp first saved
+  sessionDate: "",
+  ownerFilter: "all",    // all | Adam | Brigitte | Shared
+  viewMode: "covey",     // covey | para
+  activeTab: "braindump",
+  selectedDay: null,     // YYYY-MM-DD
+  calEventFilter: "tasks", // tasks | all | deadlines
+  startDate: "",
+  endDate: "",
+  done: {}               // taskId -> bool
+};
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function $(sel, root=document){ return root.querySelector(sel); }
+function $all(sel, root=document){ return Array.from(root.querySelectorAll(sel)); }
+function el(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function todayISO(){
+  const d = new Date();
+  return isoOf(d);
+}
+function isoOf(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function addDays(iso, n){
+  const d = parseISO(iso); d.setDate(d.getDate()+n); return isoOf(d);
+}
+function parseISO(iso){
+  const [y,m,d] = iso.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtLong(iso){
+  const d = parseISO(iso);
+  return d.toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+}
+function dayName(iso){ return parseISO(iso).toLocaleDateString(undefined,{weekday:"short"}); }
+function dayNum(iso){ return parseISO(iso).getDate(); }
+function fmtHour(h){ const H=Math.floor(h), M=Math.round((h-H)*60); return String(H).padStart(2,"0")+":"+String(M).padStart(2,"0"); }
+
+function showToast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+/* ============================================================
+   CROSS-DEVICE SYNC (Supabase, shared family code)
+   ============================================================ */
+function getFamilyCode(){ return localStorage.getItem(FAMILY_CODE_STORAGE) || ""; }
+function setFamilyCodeStored(code){
+  if(code) localStorage.setItem(FAMILY_CODE_STORAGE, code);
+  else localStorage.removeItem(FAMILY_CODE_STORAGE);
+}
+function sbHeaders(extra){
+  return Object.assign({
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json"
+  }, extra || {});
+}
+async function cloudPull(){
+  const code = getFamilyCode(); if(!code) return [];
+  const url = `${SUPABASE_URL}/rest/v1/brain_dump_sessions?family_code=eq.${encodeURIComponent(code)}&select=payload&order=saved_at.desc`;
+  const res = await fetch(url, { headers: sbHeaders() });
+  if(!res.ok) throw new Error("pull " + res.status);
+  const rows = await res.json();
+  return rows.map(r => r.payload).filter(Boolean);
+}
+async function cloudPush(entry){
+  const code = getFamilyCode(); if(!code || !entry || !entry.id) return;
+  const row = { family_code: code, session_id: entry.id, saved_at: entry.savedAt || Date.now(), payload: entry };
+  const url = `${SUPABASE_URL}/rest/v1/brain_dump_sessions?on_conflict=family_code,session_id`;
+  await fetch(url, {
+    method: "POST",
+    headers: sbHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([row])
+  });
+}
+async function cloudDelete(id){
+  const code = getFamilyCode(); if(!code) return;
+  const url = `${SUPABASE_URL}/rest/v1/brain_dump_sessions?family_code=eq.${encodeURIComponent(code)}&session_id=eq.${encodeURIComponent(id)}`;
+  await fetch(url, { method: "DELETE", headers: sbHeaders({ "Prefer": "return=minimal" }) });
+}
+// debounce pushes so rapid state changes (tab/filter switches) don't spam the network
+let _pushTimer = null;
+function schedulePush(entry){
+  if(!getFamilyCode()) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(() => { cloudPush(entry).catch(e => console.warn("cloud push failed", e)); }, 1200);
+}
+// pull cloud sessions, merge with local (newest savedAt wins), persist, return merged list
+async function refreshFromCloud(){
+  if(!getFamilyCode()) return loadSessions();
+  const cloud = await cloudPull();
+  const byId = {};
+  [...loadSessions(), ...cloud].forEach(s => {
+    if(!s || !s.id) return;
+    const ex = byId[s.id];
+    if(!ex || (s.savedAt || 0) >= (ex.savedAt || 0)) byId[s.id] = s;
+  });
+  let merged = Object.values(byId).sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
+  if(merged.length > 100) merged.length = 100;
+  saveSessions(merged);
+  return merged;
+}
+async function setupSync(){
+  const cur = getFamilyCode();
+  const code = prompt(
+    "Family Code — both of you type the SAME code on each device to share your brain dumps.\n\n" +
+    "Pick something only you two know (e.g. adam-brigitte-2026). Leave blank to turn sync off.",
+    cur || ""
+  );
+  if(code === null) return; // cancelled
+  const clean = code.trim().toLowerCase().replace(/\s+/g, "-");
+  if(!clean){ setFamilyCodeStored(""); showToast("Sync turned off"); openHistory(); return; }
+  setFamilyCodeStored(clean);
+  showToast("Syncing…");
+  try {
+    // push every local session up so the other device can see them
+    for(const s of loadSessions()) await cloudPush(s);
+    // pull anything the other device already added
+    await refreshFromCloud();
+    showToast("Synced ✓");
+  } catch(e){
+    console.warn("Initial sync failed", e);
+    showToast("Sync saved — will retry");
+  }
+  openHistory();
+}
+
+/* ============================================================
+   SESSION HISTORY (localStorage + optional cloud)
+   ============================================================ */
+function loadSessions(){
+  try { return JSON.parse(localStorage.getItem(SESSIONS_STORAGE) || "[]"); }
+  catch(_){ return []; }
+}
+function saveSessions(list){
+  try { localStorage.setItem(SESSIONS_STORAGE, JSON.stringify(list)); }
+  catch(e){ console.warn("Could not save history (storage full?)", e); }
+}
+function upsertCurrentSession(){
+  if(!state.data || !state.sessionId) return;
+  const list = loadSessions();
+  const entry = {
+    id: state.sessionId,
+    savedAt: state.savedAt || Date.now(),
+    sessionDate: state.sessionDate,
+    label: (state.data.oneThing && state.data.oneThing.trim()) || "Brain dump",
+    taskCount: (state.data.tasks || []).length,
+    data: state.data,
+    startDate: state.startDate,
+    endDate: state.endDate,
+    done: state.done
+  };
+  const idx = list.findIndex(s => s.id === entry.id);
+  if(idx >= 0){ entry.savedAt = list[idx].savedAt; list[idx] = entry; }
+  else { list.unshift(entry); }
+  // newest first, cap to 100 to avoid unbounded growth
+  list.sort((a,b)=> (b.savedAt||0) - (a.savedAt||0));
+  if(list.length > 100) list.length = 100;
+  saveSessions(list);
+  schedulePush(entry); // push to cloud if a family code is set (debounced)
+}
+function deleteSession(id){
+  saveSessions(loadSessions().filter(s => s.id !== id));
+  cloudDelete(id).catch(e => console.warn("cloud delete failed", e));
+}
+function fmtSaved(ts){
+  if(!ts) return "";
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month:"short", day:"numeric" }) + " · " +
+         d.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
+}
+function openSession(id){
+  const s = loadSessions().find(x => x.id === id);
+  if(!s) return;
+  state.data = s.data;
+  state.sessionId = s.id;
+  state.savedAt = s.savedAt;
+  state.sessionDate = s.sessionDate;
+  state.startDate = s.startDate;
+  state.endDate = s.endDate;
+  state.done = s.done || {};
+  state.ownerFilter = "all";
+  state.viewMode = "covey";
+  state.activeTab = "braindump";
+  state.selectedDay = s.startDate;
+  closePopover();
+  renderDashboard();
+  writeHash();
+  showScreen("dashboard");
+  window.scrollTo(0,0);
+}
+function historyListHTML(list){
+  if(!list.length){
+    return `<p style="color:var(--text-dim);font-size:14px;margin-top:6px;">No saved entries yet. Process a brain dump and it'll be saved here automatically.</p>`;
+  }
+  return `<div class="hist-list">` + list.map(s => `
+    <div class="hist-row">
+      <div class="hist-main" data-open="${esc(s.id)}">
+        <div class="hist-label">${esc(s.label)}</div>
+        <div class="hist-meta">${esc(fmtLong(s.sessionDate))} · ${s.taskCount} task${s.taskCount===1?'':'s'} · saved ${esc(fmtSaved(s.savedAt))}</div>
+      </div>
+      <button class="icon-btn hist-del" data-del="${esc(s.id)}" title="Delete entry">🗑</button>
+    </div>`).join("") + `</div>`;
+}
+function syncBarHTML(){
+  const code = getFamilyCode();
+  if(code){
+    return `<div class="sync-bar synced">
+      <span>🔗 Synced as <b>${esc(code)}</b> — visible on any device using this code.</span>
+      <button class="icon-btn" id="syncBtn">Change</button>
+    </div>`;
+  }
+  return `<div class="sync-bar">
+    <span>📱 Saved on this device only. Set a shared code so Brigitte sees these too.</span>
+    <button class="icon-btn" id="syncBtn">Set up sync</button>
+  </div>`;
+}
+async function openHistory(){
+  const mount = $("#popoverMount");
+  const code = getFamilyCode();
+  // initial render (local cache) so the modal opens instantly
+  mount.innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover wide">
+      <span class="close-x" id="popClose">×</span>
+      <h3>Past entries ${code ? '<span class="sync-status" id="syncStatus">syncing…</span>' : ''}</h3>
+      ${syncBarHTML()}
+      <div id="histBody">${historyListHTML(loadSessions())}</div>
+    </div>
+  </div>`;
+  wireHistory(mount);
+
+  // if synced, refresh from cloud then re-render the list
+  if(code){
+    try {
+      const merged = await refreshFromCloud();
+      const body = $("#histBody"); if(body) body.innerHTML = historyListHTML(merged);
+      const st = $("#syncStatus"); if(st) st.remove();
+      wireHistory(mount);
+    } catch(e){
+      console.warn("History cloud refresh failed", e);
+      const st = $("#syncStatus"); if(st) st.textContent = "offline";
+    }
+  }
+}
+function wireHistory(mount){
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
+  const sb = $("#syncBtn"); if(sb) sb.addEventListener("click", setupSync);
+  mount.querySelectorAll("[data-open]").forEach(b =>
+    b.addEventListener("click", () => openSession(b.dataset.open)));
+  mount.querySelectorAll("[data-del]").forEach(b =>
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      const where = getFamilyCode() ? "everywhere it's synced" : "from this device";
+      if(confirm("Delete this saved entry? This removes it " + where + ".")){
+        deleteSession(b.dataset.del);
+        openHistory();
+      }
+    }));
+}
+
+/* ============================================================
+   STATE ENCODING (URL HASH)
+   ============================================================ */
+function encodeState(){
+  const payload = {
+    data: state.data,
+    sessionId: state.sessionId,
+    savedAt: state.savedAt,
+    sessionDate: state.sessionDate,
+    ownerFilter: state.ownerFilter,
+    viewMode: state.viewMode,
+    activeTab: state.activeTab,
+    selectedDay: state.selectedDay,
+    startDate: state.startDate,
+    endDate: state.endDate,
+    done: state.done
+  };
+  // Unicode-safe base64
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  return b64;
+}
+function writeHash(){
+  if(!state.data) return;
+  history.replaceState(null, "", "#state=" + encodeState());
+  upsertCurrentSession();
+}
+function loadFromHash(){
+  const h = window.location.hash;
+  const m = h.match(/state=([^&]+)/);
+  if(!m) return false;
+  try {
+    const json = decodeURIComponent(escape(atob(m[1])));
+    const payload = JSON.parse(json);
+    state.data = payload.data;
+    state.sessionId = payload.sessionId || ("s" + Date.now());
+    state.savedAt = payload.savedAt || Date.now();
+    state.sessionDate = payload.sessionDate || todayISO();
+    state.ownerFilter = payload.ownerFilter || "all";
+    state.viewMode = payload.viewMode || "covey";
+    state.activeTab = payload.activeTab || "braindump";
+    state.startDate = payload.startDate || todayISO();
+    state.endDate = payload.endDate || addDays(todayISO(),21);
+    state.done = payload.done || {};
+    state.selectedDay = payload.selectedDay || state.startDate;
+    return !!state.data;
+  } catch(e){
+    console.error("Failed to decode hash state", e);
+    return false;
+  }
+}
+
+/* ============================================================
+   SCREEN ROUTING
+   ============================================================ */
+function showScreen(which){
+  $("#setupScreen").classList.toggle("hidden", which!=="setup");
+  $("#inputScreen").classList.toggle("hidden", which!=="input");
+  $("#dashboard").classList.toggle("hidden", which!=="dashboard");
+  $("#appHeader").classList.toggle("hidden", which==="setup");
+  // New Session + owner toggle + share only meaningful on dashboard
+  const onDash = which==="dashboard";
+  $("#newSessionBtn").classList.toggle("hidden", !onDash);
+  $("#shareBtn").classList.toggle("hidden", !onDash);
+  $("#ownerToggle").classList.toggle("hidden", !onDash);
+  $("#assistantBar").classList.toggle("hidden", !onDash);
+}
+
+function boot(){
+  let key = null;
+  try { key = localStorage.getItem(API_KEY_STORAGE); } catch(_){}
+  // if synced, quietly refresh the local cache from the cloud in the background
+  try { if(getFamilyCode()) refreshFromCloud().catch(e => console.warn("boot cloud refresh failed", e)); } catch(_){}
+  try {
+    if(loadFromHash()){
+      renderDashboard();
+      upsertCurrentSession();
+      showScreen("dashboard");
+      return;
+    }
+  } catch(e){
+    // A bad/incompatible saved session must never leave a blank screen.
+    console.error("Couldn't open the saved session — falling back.", e);
+    try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
+    state.data = null;
+  }
+  if(!key){
+    showScreen("setup");
+    return;
+  }
+  prepInputDefaults();
+  showScreen("input");
+}
+
+function prepInputDefaults(){
+  if(!$("#startDate").value) $("#startDate").value = todayISO();
+  if(!$("#endDate").value) $("#endDate").value = addDays(todayISO(), 21);
+}
+
+/* ============================================================
+   API KEY HANDLING
+   ============================================================ */
+$("#saveKeyBtn").addEventListener("click", ()=>{
+  const k = $("#apiKeyInput").value.trim();
+  if(!k){ $("#apiKeyInput").focus(); return; }
+  localStorage.setItem(API_KEY_STORAGE, k);
+  prepInputDefaults();
+  showScreen("input");
+});
+$("#keyBtn").addEventListener("click", ()=>{
+  const cur = localStorage.getItem(API_KEY_STORAGE) || "";
+  const next = prompt("Anthropic API key (stored only on this device):", cur);
+  if(next!==null){
+    if(next.trim()) { localStorage.setItem(API_KEY_STORAGE, next.trim()); showToast("API key updated ✓"); }
+    else { localStorage.removeItem(API_KEY_STORAGE); showToast("API key cleared"); }
+  }
+});
+
+/* ============================================================
+   PROCESSING — THE API CALL
+   ============================================================ */
+const LOADING_MESSAGES = ["Reading your transcript…","Sorting by priority…","Building your calendar…","Almost ready…"];
+
+$("#processBtn").addEventListener("click", processTranscript);
+
+async function processTranscript(){
+  const transcript = $("#transcriptInput").value.trim();
+  $("#inputError").innerHTML = "";
+  if(!transcript){
+    $("#inputError").innerHTML = `<div class="error-card">Add some content before processing.</div>`;
+    return;
+  }
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if(!key){
+    showScreen("setup");
+    return;
+  }
+
+  const adamHours = parseFloat($("#adamHours").value) || 4;
+  const brigitteHours = parseFloat($("#brigitteHours").value) || 3;
+  const start = $("#startDate").value || todayISO();
+  const end = $("#endDate").value || addDays(start, 21);
+  const today = todayISO();
+
+  const userMessage =
+`Today's date: ${today}
+Adam's available hours per day: ${adamHours}
+Brigitte's available hours per day: ${brigitteHours}
+Calendar window: ${start} to ${end}
+TRANSCRIPT:
+${transcript}`;
+
+  // loading UI
+  $("#processBtnWrap").classList.add("hidden");
+  $("#loadingWrap").classList.remove("hidden");
+  setInputsDisabled(true);
+  let msgIdx = 0;
+  $("#loadingMsg").textContent = LOADING_MESSAGES[0];
+  const msgTimer = setInterval(()=>{
+    msgIdx = (msgIdx+1) % LOADING_MESSAGES.length;
+    $("#loadingMsg").textContent = LOADING_MESSAGES[msgIdx];
+  }, 2200);
+
+  function endLoading(){
+    clearInterval(msgTimer);
+    $("#processBtnWrap").classList.remove("hidden");
+    $("#loadingWrap").classList.add("hidden");
+    setInputsDisabled(false);
+  }
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }]
+      })
+    });
+
+    if(!res.ok){
+      let detail = "";
+      try { const e = await res.json(); detail = e?.error?.message || ""; } catch(_){}
+      endLoading();
+      $("#inputError").innerHTML = `<div class="error-card">Couldn't reach the API (${res.status}). ${esc(detail)} Check your key and connection, then try again.</div>`;
+      return;
+    }
+
+    const json = await res.json();
+    let text = (json.content && json.content[0] && json.content[0].text) ? json.content[0].text : "";
+    text = stripFences(text);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch(e){
+      // try to salvage the first {...} block
+      const salvage = text.match(/\{[\s\S]*\}/);
+      if(salvage){
+        try { parsed = JSON.parse(salvage[0]); } catch(_){}
+      }
+    }
+
+    if(!parsed){
+      endLoading();
+      $("#inputError").innerHTML = `<div class="error-card">Processing failed — the AI returned an unexpected format. Try again.</div>`;
+      return;
+    }
+
+    // initialise state
+    state.data = parsed;
+    state.sessionId = "s" + Date.now();
+    state.savedAt = Date.now();
+    state.sessionDate = parsed.sessionDate || today;
+    state.startDate = start;
+    state.endDate = end;
+    state.ownerFilter = "all";
+    state.viewMode = "covey";
+    state.activeTab = "braindump";
+    state.selectedDay = start;
+    state.done = {};
+
+    endLoading();
+    renderDashboard();
+    writeHash();
+    showScreen("dashboard");
+    window.scrollTo(0,0);
+
+  } catch(err){
+    console.error(err);
+    endLoading();
+    const fileMode = window.location.protocol === "file:";
+    let hint = "";
+    if(fileMode){
+      hint = `<br><br><b>Likely cause:</b> you opened this file directly from your hard drive (the address bar starts with <code>file:///</code>). Browsers block API calls from local files. Host it on GitHub Pages, or run a tiny local server, and it will work.`;
+    } else {
+      hint = `<br><br>This is usually a network block (firewall, VPN, or a browser extension/ad-blocker). Try a different browser or disable extensions for this page.`;
+    }
+    $("#inputError").innerHTML = `<div class="error-card">Couldn't reach the API.<br><span style="opacity:0.85;font-size:12px;">Details: ${esc(err.name)}: ${esc(err.message)}</span>${hint}</div>`;
+  }
+}
+
+function stripFences(t){
+  return t.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/,"").trim();
+}
+function setInputsDisabled(d){
+  $all("#inputScreen input, #inputScreen textarea, #inputScreen button").forEach(x=>{ x.disabled = d; });
+  $("#keyBtn").disabled = d;
+}
+
+/* ============================================================
+   HEADER CONTROLS
+   ============================================================ */
+$("#ownerToggle").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  state.ownerFilter = b.dataset.owner;
+  $all("#ownerToggle button").forEach(x=>x.classList.toggle("active", x===b));
+  renderActiveTab();
+  writeHash();
+});
+$("#shareBtn").addEventListener("click", async ()=>{
+  writeHash();
+  const url = window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Link copied ✓");
+  } catch(_){
+    // fallback
+    const ta = document.createElement("textarea"); ta.value=url; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand("copy"); showToast("Link copied ✓"); }catch(e){ showToast("Copy failed"); }
+    document.body.removeChild(ta);
+  }
+});
+$("#historyBtn").addEventListener("click", openHistory);
+$("#newSessionBtn").addEventListener("click", ()=>{
+  // clear hash but keep old link working (it's already encoded in whatever was copied)
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+  state.data = null;
+  $("#transcriptInput").value = "";
+  $("#inputError").innerHTML = "";
+  prepInputDefaults();
+  showScreen("input");
+  window.scrollTo(0,0);
+});
+
+/* ============================================================
+   TAB SWITCHING
+   ============================================================ */
+$("#tabs").addEventListener("click", e=>{
+  const b = e.target.closest(".tab"); if(!b) return;
+  state.activeTab = b.dataset.tab;
+  $all("#tabs .tab").forEach(t=>t.classList.toggle("active", t===b));
+  updateTabPanes();
+  renderActiveTab();
+  writeHash();
+});
+
+function updateTabPanes(){
+  ["braindump","calendar","planner","momentum"].forEach(name=>{
+    const pane = document.getElementById("tab-"+name);
+    if(pane) pane.classList.toggle("hidden", state.activeTab!==name);
+  });
+}
+
+function renderActiveTab(){
+  if(state.activeTab==="braindump") renderBrainDump();
+  else if(state.activeTab==="calendar") renderCalendar();
+  else if(state.activeTab==="planner") renderPlanner();
+  else if(state.activeTab==="momentum") renderMomentum();
+}
+
+/* ============================================================
+   FILTER HELPERS
+   ============================================================ */
+function ownerMatch(owner){
+  if(state.ownerFilter==="all") return true;
+  if(owner==="Shared") return true; // shared shows for everyone
+  return owner===state.ownerFilter;
+}
+
+/* ============================================================
+   DASHBOARD RENDER
+   ============================================================ */
+function renderDashboard(){
+  $("#headerDate").textContent = fmtLong(state.sessionDate);
+  // sync owner toggle
+  $all("#ownerToggle button").forEach(x=>x.classList.toggle("active", x.dataset.owner===state.ownerFilter));
+  // sync tab active states
+  $all("#tabs .tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===state.activeTab));
+  updateTabPanes();
+  renderActiveTab();
+}
+
+/* ---------- TAB 1: BRAIN DUMP ---------- */
+function toneEmoji(text){
+  const t = (text||"").toLowerCase();
+  if(/overwhelm|stress|anxious|too much|drown|swamp/.test(t)) return "🌊";
+  if(/energ|excited|motivat|pumped|buzz/.test(t)) return "⚡";
+  if(/focus|clear|ready|determined|on track/.test(t)) return "🎯";
+  return "🌿";
+}
+
+function taskRowHTML(task){
+  const done = !!state.done[task.id];
+  return `<div class="task-row ${done?'done':''}" data-tid="${esc(task.id)}" draggable="true" data-drag-task="${esc(task.id)}">
+    <input type="checkbox" class="task-check" ${done?'checked':''}>
+    <div class="task-main">
+      <div class="task-title">${esc(task.title)}</div>
+      <div class="task-meta">
+        <span class="badge owner-${esc(task.owner)}">${esc(task.owner)}</span>
+        <span class="badge para">${esc(task.para)}</span>
+        <span class="badge hours">${esc(task.estimatedHours)}h</span>
+        ${task.deadlineHint && task.deadlineHint!=="no deadline" ? `<span class="badge">${esc(task.deadlineHint)}</span>`:""}
+      </div>
+    </div>
+    <button class="task-edit" data-edit="${esc(task.id)}" title="Edit task">✎</button>
+  </div>`;
+}
+
+function renderBrainDump(){
+  const d = state.data;
+  const pane = $("#tab-braindump");
+  const tasks = (d.tasks||[]).filter(t=>ownerMatch(t.owner));
+
+  let html = "";
+
+  // One Thing banner
+  if(d.oneThing){
+    html += `<div class="one-thing">
+      <div class="eyebrow">Your One Thing</div>
+      <h2>${esc(d.oneThing)}</h2>
+      <div class="subtext">Your single most important action right now</div>
+    </div>`;
+  }
+
+  // Emotional check-in
+  if(d.emotionalCheckIn){
+    html += `<div class="emo-card">
+      <div class="emoji">${toneEmoji(d.emotionalCheckIn)}</div>
+      <div class="text">${esc(d.emotionalCheckIn)}</div>
+    </div>`;
+  }
+
+  // View switch + add task
+  html += `<div class="section-title">
+    ${state.viewMode==="covey" ? "Priorities" : "PARA"}
+    <span class="view-switch" style="display:flex;gap:8px;">
+      <button class="icon-btn" id="addTaskBtn">+ Add task</button>
+      <button class="icon-btn" id="viewSwitchBtn">${state.viewMode==="covey" ? "PARA view" : "Covey grid"}</button>
+    </span>
+  </div>`;
+
+  if(state.viewMode==="covey"){
+    html += renderCoveyGrid(tasks);
+  } else {
+    html += renderParaView(tasks);
+  }
+
+  // Open loops
+  const loops = d.openLoops||[];
+  if(loops.length){
+    html += `<div class="section-title">Open Loops</div>
+      <div class="loops-wrap">
+      ${loops.map(l=>`<div class="loop-item"><span class="ic">⭕</span><span>${esc(l.description)}</span></div>`).join("")}
+      </div>`;
+  }
+
+  // Projects
+  const projects = d.projects||[];
+  if(projects.length){
+    html += `<div class="section-title">Projects</div>
+      <div class="proj-list">
+      ${projects.map(p=>`<div class="proj-item">
+        <span class="status-badge status-${esc(p.status||'active')}">${esc(p.status||'active')}</span>
+        <span class="proj-name">${esc(p.name)}</span>
+        <span class="count">${(p.taskIds||[]).length} task${(p.taskIds||[]).length===1?'':'s'}</span>
+      </div>`).join("")}
+      </div>`;
+  }
+
+  pane.innerHTML = html;
+
+  // wire view switch
+  const vs = $("#viewSwitchBtn", pane);
+  if(vs) vs.addEventListener("click", ()=>{
+    state.viewMode = state.viewMode==="covey" ? "para" : "covey";
+    renderBrainDump();
+    writeHash();
+  });
+
+  // wire add task
+  const at = $("#addTaskBtn", pane);
+  if(at) at.addEventListener("click", ()=> openTaskEditor(null));
+
+  // wire edit buttons
+  $all("[data-edit]", pane).forEach(b=>
+    b.addEventListener("click", e=>{ e.stopPropagation(); openTaskEditor(b.dataset.edit); }));
+
+  // wire checkboxes
+  $all(".task-check", pane).forEach(cb=>{
+    cb.addEventListener("change", e=>{
+      const row = e.target.closest(".task-row");
+      const tid = row.dataset.tid;
+      state.done[tid] = e.target.checked;
+      row.classList.toggle("done", e.target.checked);
+      writeHash();
+    });
+  });
+
+  // wire PARA collapse
+  $all(".para-head", pane).forEach(h=>{
+    h.addEventListener("click", ()=> h.closest(".para-section").classList.toggle("collapsed"));
+  });
+}
+
+function renderCoveyGrid(tasks){
+  const quads = [
+    { q:1, cls:"q1", title:"Do First", sub:"Urgent + Important" },
+    { q:2, cls:"q2", title:"Schedule", sub:"Important, not urgent" },
+    { q:3, cls:"q3", title:"Question / Delegate", sub:"Urgent, not important" },
+    { q:4, cls:"q4", title:"Eliminate", sub:"Neither" }
+  ];
+  return `<div class="covey-grid">` + quads.map(qd=>{
+    const items = tasks.filter(t=>Number(t.coveyQ)===qd.q);
+    return `<div class="quad ${qd.cls}">
+      <div class="quad-head"><span>${qd.title}</span><span class="q-sub">Q${qd.q} · ${qd.sub}</span></div>
+      <div class="quad-body" data-drop-q="${qd.q}">
+        ${items.length ? items.map(taskRowHTML).join("") : `<div class="quad-empty">Nothing here.</div>`}
+      </div>
+    </div>`;
+  }).join("") + `</div>`;
+}
+
+function renderParaView(tasks){
+  const sections = [
+    { key:"Project", label:"Projects" },
+    { key:"Area", label:"Areas" },
+    { key:"Resource", label:"Resources" },
+    { key:"Archive", label:"Archive" }
+  ];
+  return sections.map(s=>{
+    const items = tasks.filter(t=>t.para===s.key);
+    return `<div class="para-section ${items.length?'':'collapsed'}">
+      <div class="para-head">
+        <span class="chev">▾</span>
+        <span>${s.label}</span>
+        <span class="count badge">${items.length}</span>
+      </div>
+      <div class="para-body" data-drop-para="${s.key}">
+        ${items.length ? items.map(taskRowHTML).join("") : `<div class="quad-empty">Nothing here.</div>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------- TAB 2: CALENDAR ---------- */
+function dateRange(){
+  const out = [];
+  let cur = state.startDate;
+  let guard = 0;
+  while(cur <= state.endDate && guard < 120){
+    out.push(cur);
+    cur = addDays(cur,1);
+    guard++;
+  }
+  return out;
+}
+
+function calendarItemsFor(iso){
+  // combine calendarEvents + tasks with suggestedDay
+  const d = state.data;
+  let items = [];
+  (d.calendarEvents||[]).forEach(ev=>{
+    if(ev.date===iso) items.push({
+      id: ev.id, title: ev.title, owner: ev.owner||"Shared",
+      type: ev.type||"event", isEvent: true, timeHint: ev.timeHint
+    });
+  });
+  (d.tasks||[]).forEach(t=>{
+    if(t.suggestedDay===iso) items.push({
+      id: t.id, title: t.title, owner: t.owner, type:"task", isEvent:false,
+      estimatedHours: t.estimatedHours, coveyQ: t.coveyQ, deadlineHint: t.deadlineHint,
+      detail: t.detail
+    });
+  });
+  return items;
+}
+
+function passesCalFilter(item){
+  if(!ownerMatch(item.owner)) return false;
+  if(state.calEventFilter==="tasks") return item.type==="task";
+  if(state.calEventFilter==="deadlines") return item.type==="deadline";
+  return true; // all
+}
+
+function renderCalendar(){
+  const pane = $("#tab-calendar");
+  const days = dateRange();
+  const today = todayISO();
+
+  let html = `<div class="cal-filters">
+    <div class="owner-toggle" id="calEventToggle">
+      <button data-f="tasks" class="${state.calEventFilter==='tasks'?'active':''}">Tasks</button>
+      <button data-f="all" class="${state.calEventFilter==='all'?'active':''}">All events</button>
+      <button data-f="deadlines" class="${state.calEventFilter==='deadlines'?'active':''}">Deadlines</button>
+    </div>
+    <span class="key-indicator">${days.length} days · ${esc(fmtLong(state.startDate))} → ${esc(fmtLong(state.endDate))}</span>
+  </div>`;
+
+  // day names row (desktop)
+  const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  html += `<div class="cal-daynames">${names.map(n=>`<span>${n}</span>`).join("")}</div>`;
+
+  // pad first week
+  const firstDow = parseISO(days[0]).getDay();
+  let cells = "";
+  for(let i=0;i<firstDow;i++) cells += `<div class="cal-cell empty"></div>`;
+
+  days.forEach(iso=>{
+    const items = calendarItemsFor(iso).filter(passesCalFilter);
+    const visible = items.slice(0,3);
+    const overflow = items.length - visible.length;
+    cells += `<div class="cal-cell ${iso===today?'today':''}" data-day="${iso}" data-drop-day="${iso}">
+      <div class="cal-date"><span>${dayName(iso)}</span><span class="num">${dayNum(iso)}</span></div>
+      ${visible.map(it=>chipHTML(it)).join("")}
+      ${overflow>0 ? `<span class="more-link" data-expand="${iso}">+${overflow} more</span>`:""}
+    </div>`;
+  });
+
+  html += `<div class="cal-grid" id="calGrid">${cells}</div>`;
+  pane.innerHTML = html;
+
+  // wire event filter
+  $("#calEventToggle", pane).addEventListener("click", e=>{
+    const b = e.target.closest("button"); if(!b) return;
+    state.calEventFilter = b.dataset.f;
+    renderCalendar(); writeHash();
+  });
+
+  // wire chip clicks + expand
+  $("#calGrid", pane).addEventListener("click", e=>{
+    const exp = e.target.closest("[data-expand]");
+    if(exp){
+      const iso = exp.dataset.expand;
+      const cell = exp.closest(".cal-cell");
+      const items = calendarItemsFor(iso).filter(passesCalFilter);
+      // re-render this cell fully expanded
+      cell.querySelectorAll(".chip,.more-link").forEach(n=>n.remove());
+      items.forEach(it=> cell.appendChild(el(chipHTML(it))));
+      wireChip(cell);
+      return;
+    }
+    const chip = e.target.closest(".chip");
+    if(chip) openTaskPopover(chip.dataset.day, chip.dataset.id);
+  });
+}
+
+function chipHTML(it){
+  const flag = it.type==="deadline" ? `<span class="flag">🔴 </span>` : "";
+  const title = it.title.length>25 ? it.title.slice(0,24)+"…" : it.title;
+  // only task chips are draggable (events/deadlines have no suggestedDay to move)
+  const drag = it.isEvent ? "" : ` draggable="true" data-drag-task="${esc(it.id)}"`;
+  return `<div class="chip owner-${esc(it.owner)}" data-id="${esc(it.id)}" data-day="${esc(it.day||'')}"${drag}>${flag}${esc(title)}</div>`;
+}
+function wireChip(cell){
+  // chips inside a manually-expanded cell need their day attribute
+  const iso = cell.dataset.day;
+  cell.querySelectorAll(".chip").forEach(c=> c.dataset.day = iso);
+}
+
+function findItem(iso, id){
+  return calendarItemsFor(iso).find(x=>x.id===id);
+}
+function openTaskPopover(iso, id){
+  // chips may not carry day; derive from cell
+  let item = null;
+  if(iso) item = findItem(iso, id);
+  if(!item){
+    // search all
+    for(const day of dateRange()){ const f = calendarItemsFor(day).find(x=>x.id===id); if(f){ item=f; break; } }
+  }
+  if(!item) return;
+  const q = item.coveyQ ? `Q${item.coveyQ}` : "—";
+  const mount = $("#popoverMount");
+  mount.innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover">
+      <span class="close-x" id="popClose">×</span>
+      <h3>${esc(item.title)}</h3>
+      <div class="pv-row">
+        <span class="badge owner-${esc(item.owner)}">${esc(item.owner)}</span>
+        ${item.estimatedHours!=null?`<span class="badge hours">${esc(item.estimatedHours)}h</span>`:""}
+        <span class="badge">Covey ${q}</span>
+        <span class="badge">${esc(item.type)}</span>
+      </div>
+      ${item.deadlineHint?`<div class="pv-row"><span class="badge">Deadline: ${esc(item.deadlineHint)}</span></div>`:""}
+      ${item.detail?`<div class="pv-detail">${esc(item.detail)}</div>`:""}
+      ${!item.isEvent?`<div class="editor-actions"><button class="icon-btn" id="popEdit">✎ Edit task</button></div>`:""}
+    </div>
+  </div>`;
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e=>{ if(e.target.id==="popBack") closePopover(); });
+  const pe = $("#popEdit");
+  if(pe) pe.addEventListener("click", ()=> openTaskEditor(item.id));
+}
+function closePopover(){ $("#popoverMount").innerHTML=""; }
+
+/* ---------- TAB 3: DAY PLANNER ---------- */
+const DAY_START = 7, DAY_END = 22; // hours
+const SLOT_MIN = 30;
+const PX_PER_HOUR = 60; // 30px per slot
+
+function blockWindow(timeBlock){
+  switch(timeBlock){
+    case "morning": return [8,12];
+    case "afternoon": return [13,17];
+    case "evening": return [18,21];
+    default: return [DAY_START, DAY_END]; // flexible
+  }
+}
+
+function plannerTasksFor(iso, owner){
+  // tasks whose suggestedDay === iso, matching owner (Shared counts for both)
+  return (state.data.tasks||[]).filter(t=>{
+    if(t.suggestedDay!==iso) return false;
+    if(owner==="Adam") return t.owner==="Adam" || t.owner==="Shared";
+    if(owner==="Brigitte") return t.owner==="Brigitte" || t.owner==="Shared";
+    return false;
+  });
+}
+
+function layoutColumn(tasks){
+  // returns [{task, start, end}]. Tasks with a numeric plannedStart are pinned
+  // exactly where the user placed them; the rest are auto-placed greedily.
+  const placed = [];
+  const occupied = [];
+  function fits(start, end){
+    if(end>DAY_END) return false;
+    return !occupied.some(iv=> start < iv.end && end > iv.start);
+  }
+
+  // 1) pinned tasks (dragged/resized or set to an exact time)
+  tasks.filter(t => typeof t.plannedStart === "number").forEach(t=>{
+    const dur = Math.max(0.25, Number(t.estimatedHours)||0.5);
+    const start = Math.min(Math.max(DAY_START, t.plannedStart), DAY_END - 0.25);
+    const end = Math.min(DAY_END, start + dur);
+    occupied.push({start, end});
+    placed.push({ task:t, start, end });
+  });
+
+  // 2) auto-placed tasks: morning, afternoon, evening, flexible; then by coveyQ
+  const order = { morning:0, afternoon:1, evening:2, flexible:3 };
+  const sorted = tasks.filter(t => typeof t.plannedStart !== "number").sort((a,b)=>{
+    const oa = order[a.suggestedTimeBlock] ?? 3, ob = order[b.suggestedTimeBlock] ?? 3;
+    if(oa!==ob) return oa-ob;
+    return (a.coveyQ||9)-(b.coveyQ||9);
+  });
+  sorted.forEach(t=>{
+    const dur = Math.max(0.25, Number(t.estimatedHours)||0.5);
+    let [ws, we] = blockWindow(t.suggestedTimeBlock);
+    let cursor = ws;
+    let start = null;
+    // step in 0.25h increments within preferred window first
+    while(cursor + dur <= we + 0.0001){
+      if(fits(cursor, cursor+dur)){ start = cursor; break; }
+      cursor += 0.25;
+    }
+    // if not fitting in preferred window, scan whole day
+    if(start===null){
+      cursor = DAY_START;
+      while(cursor + dur <= DAY_END + 0.0001){
+        if(fits(cursor, cursor+dur)){ start = cursor; break; }
+        cursor += 0.25;
+      }
+    }
+    if(start===null) start = DAY_START; // overflow — stack at top
+    const end = start+dur;
+    occupied.push({start, end});
+    placed.push({ task:t, start, end });
+  });
+  return placed;
+}
+
+function renderPlanner(){
+  const pane = $("#tab-planner");
+  const days = dateRange();
+  if(!state.selectedDay || !days.includes(state.selectedDay)) state.selectedDay = days[0];
+
+  // day pills
+  let pills = `<div class="day-pills">` + days.map(iso=>
+    `<div class="day-pill ${iso===state.selectedDay?'active':''}" data-day="${iso}">
+      <span>${dayName(iso)}</span><span class="dnum">${dayNum(iso)}</span>
+    </div>`).join("") + `</div>`;
+
+  const showAdam = state.ownerFilter==="all" || state.ownerFilter==="Adam";
+  const showBrig = state.ownerFilter==="all" || state.ownerFilter==="Brigitte";
+
+  let cols = `<div class="planner-cols">`;
+  if(showAdam) cols += plannerColumnHTML("Adam", "adam", state.selectedDay);
+  if(showBrig) cols += plannerColumnHTML("Brigitte", "brigitte", state.selectedDay);
+  if(!showAdam && !showBrig) cols += plannerColumnHTML("Adam","adam",state.selectedDay); // safety
+  cols += `</div>`;
+
+  pane.innerHTML = pills + cols;
+
+  // wire pills
+  $all(".day-pill", pane).forEach(p=>p.addEventListener("click", ()=>{
+    state.selectedDay = p.dataset.day;
+    renderPlanner(); writeHash();
+  }));
+  // wire blocks — drag to move (start time), drag bottom edge to resize (duration), tap to open
+  $all(".task-block", pane).forEach(b => wirePlannerBlock(b));
+}
+
+const SNAP_PX = PX_PER_HOUR / 4; // 15-minute snap
+function wirePlannerBlock(block){
+  const id = block.dataset.id;
+  const handle = block.querySelector(".tb-resize");
+  const maxPx = (DAY_END - DAY_START) * PX_PER_HOUR;
+  let mode = null, startY = 0, origTop = 0, origHeight = 0, moved = false;
+
+  function onDown(e){
+    if(e.button && e.button !== 0) return;
+    mode = (e.target === handle) ? "resize" : "move";
+    startY = e.clientY;
+    origTop = parseFloat(block.style.top) || 0;
+    origHeight = parseFloat(block.style.height) || 22;
+    moved = false;
+    try { block.setPointerCapture(e.pointerId); } catch(_){}
+    block.classList.add("dragging-block");
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!mode) return;
+    const dy = e.clientY - startY;
+    if(Math.abs(dy) > 3) moved = true;
+    if(mode === "move"){
+      let top = origTop + dy;
+      top = Math.max(0, Math.min(top, maxPx - origHeight));
+      top = Math.round(top / SNAP_PX) * SNAP_PX;
+      block.style.top = top + "px";
+    } else {
+      let h = origHeight + dy;
+      h = Math.max(SNAP_PX, Math.round(h / SNAP_PX) * SNAP_PX);
+      const curTop = parseFloat(block.style.top) || 0;
+      h = Math.min(h, maxPx - curTop);
+      block.style.height = h + "px";
+    }
+  }
+  function onUp(e){
+    if(!mode) return;
+    try { block.releasePointerCapture(e.pointerId); } catch(_){}
+    block.classList.remove("dragging-block");
+    const wasMode = mode; mode = null;
+    if(!moved){ openTaskPopover(state.selectedDay, id); return; } // it was a tap
+    const t = getTask(id); if(!t) return;
+    const top = parseFloat(block.style.top) || 0;
+    const h = parseFloat(block.style.height) || 22;
+    // pin its start time (so it stays put after re-render)
+    t.plannedStart = Math.round((DAY_START + top / PX_PER_HOUR) * 4) / 4;
+    if(wasMode === "resize"){
+      t.estimatedHours = Math.max(0.25, Math.round(((h + 4) / PX_PER_HOUR) * 4) / 4);
+    }
+    commitChanges();
+    showToast(wasMode === "resize" ? "Duration updated ✓" : "Time updated ✓");
+  }
+  block.addEventListener("pointerdown", onDown);
+  block.addEventListener("pointermove", onMove);
+  block.addEventListener("pointerup", onUp);
+  block.addEventListener("pointercancel", onUp);
+}
+
+function plannerColumnHTML(owner, cls, iso){
+  const tasks = plannerTasksFor(iso, owner);
+  const available = owner==="Adam"
+    ? (parseFloat($("#adamHours")?.value) || 4)
+    : (parseFloat($("#brigitteHours")?.value) || 3);
+  const scheduled = tasks.reduce((s,t)=> s + (Number(t.estimatedHours)||0), 0);
+  const over = scheduled > available + 0.001;
+
+  let body;
+  if(!tasks.length){
+    body = `<div class="empty-day">No tasks scheduled for this day. Drag tasks from the Brain Dump tab to assign them here.</div>`;
+  } else {
+    const placed = layoutColumn(tasks);
+    // build slot grid
+    let slots = "";
+    for(let h=DAY_START; h<DAY_END; h++){
+      for(let m=0;m<60;m+=SLOT_MIN){
+        const label = m===0 ? `${String(h).padStart(2,"0")}:00` : "";
+        slots += `<div class="time-slot"><span class="time-label">${label}</span><span class="time-line"></span></div>`;
+      }
+    }
+    const blocks = placed.map(p=>{
+      const top = (p.start - DAY_START) * PX_PER_HOUR;
+      const height = Math.max(22, (p.end - p.start) * PX_PER_HOUR - 4);
+      const shared = p.task.owner==="Shared" ? `🔗 ` : "";
+      return `<div class="task-block q${p.task.coveyQ||2}" data-id="${esc(p.task.id)}" style="top:${top}px;height:${height}px;left:0;right:0;">
+        <div class="tb-title">${shared}${esc(p.task.title)}</div>
+        <div class="tb-hours">${esc(p.task.estimatedHours)}h</div>
+        <div class="tb-resize" title="Drag to change duration"></div>
+      </div>`;
+    }).join("");
+    body = `<div class="timeline">${slots}<div class="timeline-track">${blocks}</div></div>`;
+  }
+
+  return `<div class="planner-col ${cls}">
+    <div class="planner-col-head"><span>${owner}'s Day</span><span style="font-size:12px;font-weight:400;">${scheduled}h / ${available}h</span></div>
+    ${over ? `<div class="warn-banner">⚠️ ${owner}: ${scheduled}h scheduled / ${available}h available</div>`:""}
+    ${body}
+  </div>`;
+}
+
+/* ---------- TAB 4: MOMENTUM ---------- */
+const HORIZONS = [
+  { d:30,  label:"Next 30 days" },
+  { d:60,  label:"~60 days" },
+  { d:90,  label:"90 days" },
+  { d:180, label:"Longer term" }
+];
+function normHorizon(h){
+  h = Number(h) || 30;
+  if(h <= 30) return 30;
+  if(h <= 60) return 60;
+  if(h <= 90) return 90;
+  return 180;
+}
+function horizonLabel(d){ const h = HORIZONS.find(x => x.d === normHorizon(d)); return h ? h.label : d + " days"; }
+
+function renderMomentum(){
+  const d = state.data;
+  const pane = $("#tab-momentum");
+  const allTasks = (d.tasks || []).filter(t => ownerMatch(t.owner));
+  const doneTasks = allTasks.filter(t => state.done[t.id]);
+  const openTasks = allTasks.filter(t => !state.done[t.id]);
+  const total = allTasks.length;
+  const pct = total ? Math.round(doneTasks.length / total * 100) : 0;
+
+  let html = "";
+
+  // hero + progress
+  html += `<div class="mo-hero">
+    <div class="mo-hero-main">
+      <div class="mo-count">${doneTasks.length}</div>
+      <div class="mo-count-label">task${doneTasks.length===1?'':'s'} done${state.ownerFilter==='all'?'':' · '+esc(state.ownerFilter)}</div>
+    </div>
+    <div class="mo-progress-wrap">
+      <div class="mo-progress-top"><span>Progress this session</span><span>${pct}%</span></div>
+      <div class="mo-bar"><div class="mo-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mo-progress-sub">${doneTasks.length} of ${total} done · ${openTasks.length} still to go</div>
+    </div>
+  </div>`;
+
+  // WINS
+  const aiWins = (d.wins || []).filter(w => ownerMatch(w.owner));
+  html += `<div class="section-title">🏆 Wins &amp; Achievements
+    <span class="view-switch"><button class="icon-btn" id="addWinBtn">+ Add win</button></span></div>`;
+  const cards = [];
+  doneTasks.forEach(t => cards.push(`<div class="win-card done-task">
+    <span class="win-ic">✓</span>
+    <div class="win-body"><div class="win-text">${esc(t.title)}</div><span class="badge owner-${esc(t.owner)}">${esc(t.owner)}</span></div>
+  </div>`));
+  aiWins.forEach(w => cards.push(`<div class="win-card">
+    <span class="win-ic">⭐</span>
+    <div class="win-body"><div class="win-text">${esc(w.text)}</div><span class="badge owner-${esc(w.owner||'Shared')}">${esc(w.owner||'Shared')}</span></div>
+    <button class="win-del" data-delwin="${esc(w.id)}" title="Remove">✕</button>
+  </div>`));
+  html += cards.length ? `<div class="win-grid">${cards.join("")}</div>`
+    : `<div class="mo-empty">No wins logged yet. Tick off tasks in the Brain Dump tab, or add a win — every step forward counts.</div>`;
+
+  // WHAT'S NEXT
+  const nextTasks = openTasks.slice().sort((a,b)=>{
+    const qa=a.coveyQ||9, qb=b.coveyQ||9; if(qa!==qb) return qa-qb;
+    const da=a.suggestedDay||"9999-99-99", db=b.suggestedDay||"9999-99-99";
+    return da<db?-1:da>db?1:0;
+  }).slice(0,6);
+  html += `<div class="section-title">⏭️ What's Next</div>`;
+  html += nextTasks.length ? `<div class="next-list">` + nextTasks.map(t=>`
+    <div class="next-item" data-editnext="${esc(t.id)}">
+      <span class="next-q q${t.coveyQ||2}">Q${t.coveyQ||2}</span>
+      <span class="next-title">${esc(t.title)}</span>
+      <span class="badge owner-${esc(t.owner)}">${esc(t.owner)}</span>
+      ${t.suggestedDay?`<span class="badge">${esc(dayName(t.suggestedDay))} ${dayNum(t.suggestedDay)}</span>`:""}
+    </div>`).join("") + `</div>`
+    : `<div class="mo-empty">Nothing open — you're all caught up. 🎉</div>`;
+
+  // HORIZONS / GOALS
+  const goals = (d.goals || []).filter(g => ownerMatch(g.owner));
+  html += `<div class="section-title">🎯 Horizons
+    <span class="view-switch"><button class="icon-btn" id="addGoalBtn">+ Add goal</button></span></div>`;
+  if(!goals.length){
+    html += `<div class="mo-empty">No goals set yet. Add where you want to be in the next month, quarter, or beyond — or just tell the assistant “add a goal to …”.</div>`;
+  } else {
+    html += `<div class="horizon-cols">`;
+    HORIZONS.forEach(h=>{
+      const gs = goals.filter(g => normHorizon(g.horizonDays) === h.d);
+      if(!gs.length) return;
+      html += `<div class="horizon-col">
+        <div class="horizon-head">${h.label}<span class="count badge">${gs.length}</span></div>
+        ${gs.map(g=>`<div class="goal-card" data-editgoal="${esc(g.id)}">
+          <div class="goal-title">${esc(g.title)}</div>
+          ${g.detail?`<div class="goal-detail">${esc(g.detail)}</div>`:""}
+          <span class="badge owner-${esc(g.owner||'Shared')}">${esc(g.owner||'Shared')}</span>
+        </div>`).join("")}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  pane.innerHTML = html;
+
+  const ag = $("#addGoalBtn", pane); if(ag) ag.addEventListener("click", ()=> openGoalEditor(null));
+  const aw = $("#addWinBtn", pane); if(aw) aw.addEventListener("click", addWinQuick);
+  $all("[data-editgoal]", pane).forEach(c => c.addEventListener("click", ()=> openGoalEditor(c.dataset.editgoal)));
+  $all("[data-editnext]", pane).forEach(c => c.addEventListener("click", ()=> openTaskEditor(c.dataset.editnext)));
+  $all("[data-delwin]", pane).forEach(b => b.addEventListener("click", e => { e.stopPropagation(); removeWin(b.dataset.delwin); commitChanges(); showToast("Removed"); }));
+}
+
+/* ---------- Goals & wins mutation ---------- */
+function getGoal(id){ return ((state.data && state.data.goals) || []).find(g => g.id === id); }
+function addGoal(g){ state.data.goals = state.data.goals || []; state.data.goals.push(g); }
+function removeGoal(id){ if(state.data) state.data.goals = (state.data.goals || []).filter(g => g.id !== id); }
+function removeWin(id){ if(state.data) state.data.wins = (state.data.wins || []).filter(w => w.id !== id); }
+function addWinQuick(){
+  const text = prompt("Add a win / achievement:");
+  if(!text || !text.trim()) return;
+  const owner = (state.ownerFilter === "Adam" || state.ownerFilter === "Brigitte") ? state.ownerFilter : "Shared";
+  state.data.wins = state.data.wins || [];
+  state.data.wins.unshift({ id: "w" + Date.now(), text: text.trim(), owner });
+  commitChanges();
+  showToast("Win added 🎉");
+}
+function openGoalEditor(id){
+  if(!state.data) return;
+  const isNew = !id;
+  const src = isNew ? { id:"g"+Date.now(), title:"", detail:"", owner:"Shared", horizonDays:90 } : getGoal(id);
+  if(!src) return;
+  const g = Object.assign({}, src);
+  closePopover();
+  const sel = (val, opts) => opts.map(o => `<option value="${o.v}" ${String(o.v)===String(val)?'selected':''}>${esc(o.l)}</option>`).join("");
+  const ownerOpts = sel(g.owner, [{v:"Adam",l:"Adam"},{v:"Brigitte",l:"Brigitte"},{v:"Shared",l:"Shared"}]);
+  const horizonOpts = sel(normHorizon(g.horizonDays), HORIZONS.map(h=>({v:h.d,l:h.label})));
+  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack"><div class="popover wide">
+    <span class="close-x" id="popClose">×</span>
+    <h3>${isNew?"Add goal":"Edit goal"}</h3>
+    <div class="editor-grid">
+      <div class="full"><label>Goal</label><input id="goTitle" type="text" value="${esc(g.title)}" placeholder="Where do you want to be?"></div>
+      <div class="full"><label>Notes</label><textarea id="goDetail" placeholder="Why it matters / what it looks like…">${esc(g.detail||"")}</textarea></div>
+      <div><label>Owner</label><select id="goOwner">${ownerOpts}</select></div>
+      <div><label>Horizon</label><select id="goHorizon">${horizonOpts}</select></div>
+    </div>
+    <div class="editor-actions">
+      ${isNew?"":`<button class="btn-danger" id="goDelete">Delete</button>`}
+      <span class="spacer"></span>
+      <button class="btn-ghost" id="goCancel">Cancel</button>
+      <button class="btn-primary" id="goSave">${isNew?"Add goal":"Save"}</button>
+    </div>
+  </div></div>`;
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e=>{ if(e.target.id==="popBack") closePopover(); });
+  $("#goCancel").addEventListener("click", closePopover);
+  $("#goSave").addEventListener("click", ()=>{
+    const changes = {
+      title: $("#goTitle").value.trim() || "Untitled goal",
+      detail: $("#goDetail").value.trim(),
+      owner: $("#goOwner").value,
+      horizonDays: Number($("#goHorizon").value)
+    };
+    if(isNew) addGoal(Object.assign(g, changes));
+    else Object.assign(getGoal(id), changes);
+    closePopover(); commitChanges(); showToast(isNew?"Goal added ✓":"Saved ✓");
+  });
+  const del = $("#goDelete");
+  if(del) del.addEventListener("click", ()=>{ if(confirm("Delete this goal?")){ removeGoal(id); closePopover(); commitChanges(); showToast("Goal deleted"); } });
+  if(isNew) setTimeout(()=>{ const t=$("#goTitle"); if(t) t.focus(); }, 30);
+}
+
+/* ============================================================
+   TASK MUTATION HELPERS
+   ============================================================ */
+function getTask(id){ return ((state.data && state.data.tasks) || []).find(t => t.id === id); }
+function addTask(task){ state.data.tasks = state.data.tasks || []; state.data.tasks.push(task); }
+function removeTask(id){
+  if(!state.data) return;
+  state.data.tasks = (state.data.tasks || []).filter(t => t.id !== id);
+  (state.data.projects || []).forEach(p => { if(p.taskIds) p.taskIds = p.taskIds.filter(x => x !== id); });
+  if(state.done) delete state.done[id];
+}
+function commitChanges(){ renderActiveTab(); writeHash(); }
+
+/* ============================================================
+   TASK EDITOR MODAL
+   ============================================================ */
+function openTaskEditor(id){
+  if(!state.data) return;
+  const isNew = !id;
+  const src = isNew ? {
+    id: "t" + Date.now(),
+    title: "", detail: "", owner: "Adam", coveyQ: 2, para: "Project", project: "",
+    estimatedHours: 1, deadlineHint: "", suggestedDay: state.startDate, suggestedTimeBlock: "flexible", tags: []
+  } : getTask(id);
+  if(!src) return;
+  const t = Object.assign({ tags: [] }, src);
+  closePopover();
+  const days = dateRange();
+  const sel = (val, opts) => opts.map(o => `<option value="${o.v}" ${String(o.v)===String(val)?'selected':''}>${esc(o.l)}</option>`).join("");
+  const ownerOpts = sel(t.owner, [{v:"Adam",l:"Adam"},{v:"Brigitte",l:"Brigitte"},{v:"Shared",l:"Shared"}]);
+  const qOpts = sel(t.coveyQ, [{v:1,l:"Q1 · Do First"},{v:2,l:"Q2 · Schedule"},{v:3,l:"Q3 · Question / Delegate"},{v:4,l:"Q4 · Eliminate"}]);
+  const paraOpts = sel(t.para, [{v:"Project",l:"Project"},{v:"Area",l:"Area"},{v:"Resource",l:"Resource"},{v:"Archive",l:"Archive"}]);
+  const blockOpts = sel(t.suggestedTimeBlock, [{v:"morning",l:"Morning"},{v:"afternoon",l:"Afternoon"},{v:"evening",l:"Evening"},{v:"flexible",l:"Flexible"}]);
+  const dayOpts = `<option value="" ${!t.suggestedDay?'selected':''}>— unscheduled —</option>` +
+    days.map(d => `<option value="${d}" ${t.suggestedDay===d?'selected':''}>${esc(fmtLong(d))}</option>`).join("");
+  const planTimes = []; for(let hh=DAY_START; hh<DAY_END; hh+=0.5) planTimes.push(hh);
+  const planOpts = `<option value="" ${typeof t.plannedStart!=="number"?'selected':''}>Auto (use time block)</option>` +
+    planTimes.map(hh => `<option value="${hh}" ${Number(t.plannedStart)===hh?'selected':''}>${fmtHour(hh)}</option>`).join("");
+
+  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover wide">
+      <span class="close-x" id="popClose">×</span>
+      <h3>${isNew ? "Add task" : "Edit task"}</h3>
+      <div class="editor-grid">
+        <div class="full"><label>Title</label><input id="edTitle" type="text" value="${esc(t.title)}" placeholder="What needs doing?"></div>
+        <div class="full"><label>Notes</label><textarea id="edDetail" placeholder="Any context…">${esc(t.detail||"")}</textarea></div>
+        <div><label>Owner</label><select id="edOwner">${ownerOpts}</select></div>
+        <div><label>Priority (Covey)</label><select id="edQ">${qOpts}</select></div>
+        <div><label>PARA</label><select id="edPara">${paraOpts}</select></div>
+        <div><label>Project</label><input id="edProject" type="text" value="${esc(t.project||"")}"></div>
+        <div><label>Day</label><select id="edDay">${dayOpts}</select></div>
+        <div><label>Time block</label><select id="edBlock">${blockOpts}</select></div>
+        <div><label>Planner start</label><select id="edPlan">${planOpts}</select></div>
+        <div><label>Est. hours (duration)</label><input id="edHours" type="number" min="0" step="0.25" value="${esc(t.estimatedHours)}"></div>
+        <div><label>Deadline hint</label><input id="edDeadline" type="text" value="${esc(t.deadlineHint||"")}" placeholder="e.g. this week"></div>
+      </div>
+      <div class="editor-actions">
+        ${isNew ? "" : `<button class="btn-danger" id="edDelete">Delete</button>`}
+        <span class="spacer"></span>
+        <button class="btn-ghost" id="edCancel">Cancel</button>
+        <button class="btn-primary" id="edSave">${isNew ? "Add task" : "Save"}</button>
+      </div>
+    </div>
+  </div>`;
+
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
+  $("#edCancel").addEventListener("click", closePopover);
+  $("#edSave").addEventListener("click", () => {
+    const changes = {
+      title: $("#edTitle").value.trim() || "Untitled task",
+      detail: $("#edDetail").value.trim(),
+      owner: $("#edOwner").value,
+      coveyQ: Number($("#edQ").value),
+      para: $("#edPara").value,
+      project: $("#edProject").value.trim(),
+      suggestedDay: $("#edDay").value,
+      suggestedTimeBlock: $("#edBlock").value,
+      estimatedHours: Math.max(0, Number($("#edHours").value) || 0),
+      deadlineHint: $("#edDeadline").value.trim() || "no deadline"
+    };
+    if(isNew) addTask(Object.assign(t, changes));
+    else Object.assign(getTask(id), changes);
+    // planner start: "" = auto (clear pin), otherwise pin to an exact time
+    const tk = isNew ? t : getTask(id);
+    const ps = $("#edPlan").value;
+    if(ps === "") delete tk.plannedStart;
+    else tk.plannedStart = Number(ps);
+    closePopover();
+    commitChanges();
+    showToast(isNew ? "Task added ✓" : "Saved ✓");
+  });
+  const del = $("#edDelete");
+  if(del) del.addEventListener("click", () => {
+    if(confirm("Delete this task?")){
+      removeTask(id);
+      closePopover();
+      commitChanges();
+      showToast("Task deleted");
+    }
+  });
+  if(isNew) setTimeout(() => { const ti = $("#edTitle"); if(ti) ti.focus(); }, 30);
+}
+
+/* ============================================================
+   DRAG & DROP (move tasks between quadrants / PARA / days)
+   ============================================================ */
+let _dragTaskId = null;
+function dropZoneOf(target){ return target.closest && target.closest("[data-drop-q],[data-drop-para],[data-drop-day]"); }
+document.addEventListener("dragstart", e => {
+  const src = e.target.closest && e.target.closest("[data-drag-task]");
+  if(!src) return;
+  _dragTaskId = src.getAttribute("data-drag-task");
+  if(e.dataTransfer){ e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", _dragTaskId); } catch(_){} }
+  src.classList.add("dragging");
+});
+document.addEventListener("dragend", e => {
+  const src = e.target.closest && e.target.closest("[data-drag-task]"); if(src) src.classList.remove("dragging");
+  $all(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
+  _dragTaskId = null;
+});
+document.addEventListener("dragover", e => {
+  if(_dragTaskId == null) return;
+  const zone = dropZoneOf(e.target); if(!zone) return;
+  e.preventDefault();
+  if(e.dataTransfer) e.dataTransfer.dropEffect = "move";
+});
+document.addEventListener("dragenter", e => {
+  if(_dragTaskId == null) return;
+  const zone = dropZoneOf(e.target); if(zone) zone.classList.add("drop-hover");
+});
+document.addEventListener("dragleave", e => {
+  const zone = dropZoneOf(e.target);
+  if(zone && !zone.contains(e.relatedTarget)) zone.classList.remove("drop-hover");
+});
+document.addEventListener("drop", e => {
+  if(_dragTaskId == null) return;
+  const zone = dropZoneOf(e.target); if(!zone) return;
+  e.preventDefault();
+  const t = getTask(_dragTaskId);
+  if(t){
+    let moved = false;
+    if(zone.hasAttribute("data-drop-q")){ const nv = Number(zone.getAttribute("data-drop-q")); if(t.coveyQ !== nv){ t.coveyQ = nv; moved = true; } }
+    else if(zone.hasAttribute("data-drop-para")){ const nv = zone.getAttribute("data-drop-para"); if(t.para !== nv){ t.para = nv; moved = true; } }
+    else if(zone.hasAttribute("data-drop-day")){ const nv = zone.getAttribute("data-drop-day"); if(t.suggestedDay !== nv){ t.suggestedDay = nv; moved = true; } }
+    if(moved){ commitChanges(); showToast("Moved ✓"); }
+  }
+  $all(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
+  _dragTaskId = null;
+});
+
+/* ============================================================
+   AI ASSISTANT (voice/text → preview → apply)
+   ============================================================ */
+const ASSISTANT_SYSTEM = `You are an editing assistant for a personal task dashboard used by Adam and Brigitte, a couple in Portugal. You receive the current dashboard as JSON and a short instruction (often transcribed from speech, so it may be casual or slightly misheard). Translate the instruction into a list of edit operations. Return ONLY a single raw JSON object — no markdown, no code fences, no prose outside it:
+{
+  "summary": "one short plain-English sentence describing what you will change",
+  "operations": [ ... ]
+}
+Allowed operations:
+{ "op":"update_task", "id":"<existing task id>", "changes":{ one or more of: "title","detail","owner","coveyQ","para","project","estimatedHours","suggestedDay","suggestedTimeBlock","deadlineHint" } }
+{ "op":"add_task", "task":{ "title":..., "owner":..., "coveyQ":..., "para":..., "project":..., "estimatedHours":..., "suggestedDay":..., "suggestedTimeBlock":..., "deadlineHint":..., "detail":... } }
+{ "op":"delete_task", "id":"<existing task id>" }
+{ "op":"set_one_thing", "value":"<text>" }
+{ "op":"add_goal", "goal":{ "title":..., "detail":..., "owner":..., "horizonDays": 30|60|90|180 } }
+{ "op":"update_goal", "id":"<existing goal id>", "changes":{ "title","detail","owner","horizonDays" } }
+{ "op":"delete_goal", "id":"<existing goal id>" }
+{ "op":"add_win", "text":"<achievement text>", "owner":"Adam|Brigitte|Shared" }
+Rules:
+- Identify the task the user means by comparing their words to the provided task titles, and use that task's EXACT id.
+- Enums: owner is "Adam","Brigitte" or "Shared"; coveyQ is 1,2,3 or 4; para is "Project","Area","Resource" or "Archive"; suggestedTimeBlock is "morning","afternoon","evening" or "flexible"; goal horizonDays is 30 (this month), 60 (~two months), 90 (a quarter) or 180 (longer).
+- A "goal" is a bigger-picture objective ("launch the course", "hit €5k months"); a "task" is a concrete action. A "win" is something already accomplished. Match goals/wins to the provided goals/wins lists by meaning to get ids for update/delete.
+- All dates must be "YYYY-MM-DD" and fall within the calendar window. Resolve relative dates ("today","tomorrow","Friday","next week") using the provided today's date.
+- "estimatedHours" is how LONG a task takes (its duration). "plannedStart" places a task at an exact clock time on its day in the hourly Day Planner — a 24-hour decimal between 7 and 21.75 (e.g. 9 = 9:00am, 14.5 = 2:30pm). Use plannedStart when the user says a specific time ("put the demo at 3pm", "start the call at 10:30"). Changing how long something takes ("make the demo 2 hours") is estimatedHours.
+- For a new task use sensible defaults: owner "Shared" unless implied, coveyQ 2, para "Project", estimatedHours 0.5, suggestedTimeBlock "flexible". Do not invent an id.
+- Only include operations the user actually asked for; keep changes minimal. If you cannot map the instruction to any operation, return an empty operations array and say why in summary.`;
+
+function setAssistantBusy(b){
+  $("#assistantBar").classList.toggle("busy", b);
+  $("#assistantSend").textContent = b ? "…" : "Send";
+}
+async function askAssistant(instruction, key){
+  const d = state.data;
+  const tasksBrief = (d.tasks || []).map(t => ({
+    id:t.id, title:t.title, owner:t.owner, coveyQ:t.coveyQ, para:t.para, project:t.project,
+    estimatedHours:t.estimatedHours, suggestedDay:t.suggestedDay, suggestedTimeBlock:t.suggestedTimeBlock,
+    deadlineHint:t.deadlineHint, detail:t.detail
+  }));
+  const ctx = {
+    today: todayISO(),
+    calendarWindow: { start: state.startDate, end: state.endDate },
+    oneThing: d.oneThing,
+    tasks: tasksBrief,
+    goals: (d.goals || []).map(g => ({ id:g.id, title:g.title, owner:g.owner, horizonDays:g.horizonDays })),
+    wins: (d.wins || []).map(w => ({ id:w.id, text:w.text, owner:w.owner }))
+  };
+  const userMessage = `CURRENT DASHBOARD (JSON):\n${JSON.stringify(ctx)}\n\nUSER INSTRUCTION:\n${instruction}`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type":"application/json", "x-api-key":key, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
+    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: ASSISTANT_SYSTEM, messages: [{ role:"user", content: userMessage }] })
+  });
+  if(!res.ok) throw new Error("API " + res.status);
+  const json = await res.json();
+  let text = (json.content && json.content[0] && json.content[0].text) || "";
+  text = stripFences(text);
+  let parsed = null;
+  try { parsed = JSON.parse(text); }
+  catch(_){ const m = text.match(/\{[\s\S]*\}/); if(m){ try { parsed = JSON.parse(m[0]); } catch(e){} } }
+  return parsed;
+}
+async function runAssistant(){
+  if(!state.data){ showToast("Open a session first"); return; }
+  const instruction = $("#assistantInput").value.trim();
+  if(!instruction) return;
+  const key = localStorage.getItem(API_KEY_STORAGE);
+  if(!key){ showToast("Set your API key (🔑) first"); return; }
+  setAssistantBusy(true);
+  try {
+    const result = await askAssistant(instruction, key);
+    setAssistantBusy(false);
+    if(!result){ showToast("Couldn't read the reply — try again"); return; }
+    showAssistantPreview(instruction, result);
+  } catch(e){
+    setAssistantBusy(false);
+    console.error(e);
+    showToast("Assistant couldn't reach the API");
+  }
+}
+function prettyField(k){ return ({title:"Title",detail:"Notes",owner:"Owner",coveyQ:"Priority",para:"PARA",project:"Project",estimatedHours:"Duration",suggestedDay:"Day",suggestedTimeBlock:"Time",plannedStart:"Start"})[k] || k; }
+function goalField(k){ return ({title:"Goal",detail:"Notes",owner:"Owner",horizonDays:"Horizon"})[k] || k; }
+function sanitizeGoalChanges(ch){
+  const out = {};
+  ["title","detail","owner","horizonDays"].forEach(k => { if(ch && ch[k] != null) out[k] = ch[k]; });
+  if(out.owner && !["Adam","Brigitte","Shared"].includes(out.owner)) delete out.owner;
+  if(out.horizonDays != null) out.horizonDays = normHorizon(out.horizonDays);
+  return out;
+}
+function normalizeNewGoal(gk){
+  gk = gk || {};
+  return {
+    id: "g" + Date.now() + Math.floor(Math.random()*1000),
+    title: gk.title || "Untitled goal",
+    detail: gk.detail || "",
+    owner: ["Adam","Brigitte","Shared"].includes(gk.owner) ? gk.owner : "Shared",
+    horizonDays: normHorizon(gk.horizonDays || 90)
+  };
+}
+function prettyVal(k,v){ if(k==="suggestedDay" && v) return fmtLong(v); if(k==="coveyQ") return "Q"+v; if(k==="estimatedHours") return v+"h"; if(k==="plannedStart" && v!=null) return fmtHour(Number(v)); return String(v); }
+function opLabel(o){
+  if(o.op==="update_task"){
+    const t = getTask(o.id); const name = t ? t.title : o.id;
+    const parts = Object.entries(o.changes||{}).map(([k,v]) => `${prettyField(k)} → ${prettyVal(k,v)}`);
+    return { cls:"op-update", ic:"✎", text:`<b>${esc(name)}</b>: ${esc(parts.join(", "))}` };
+  }
+  if(o.op==="add_task"){ const tk=o.task||{}; return { cls:"op-add", ic:"＋", text:`Add <b>${esc(tk.title||"task")}</b> (${esc(tk.owner||"Shared")}, Q${esc(tk.coveyQ||2)}${tk.suggestedDay?`, ${esc(fmtLong(tk.suggestedDay))}`:""})` }; }
+  if(o.op==="delete_task"){ const t=getTask(o.id); return { cls:"op-delete", ic:"🗑", text:`Delete <b>${esc(t?t.title:o.id)}</b>` }; }
+  if(o.op==="set_one_thing"){ return { cls:"op-meta", ic:"★", text:`Set One Thing → <b>${esc(o.value||"")}</b>` }; }
+  if(o.op==="add_goal"){ const gk=o.goal||{}; return { cls:"op-add", ic:"🎯", text:`Add goal <b>${esc(gk.title||"goal")}</b> (${esc(gk.owner||"Shared")}, ${esc(horizonLabel(gk.horizonDays))})` }; }
+  if(o.op==="update_goal"){ const g=getGoal(o.id); const parts=Object.entries(o.changes||{}).map(([k,v])=>`${goalField(k)} → ${k==='horizonDays'?horizonLabel(v):v}`); return { cls:"op-update", ic:"🎯", text:`<b>${esc(g?g.title:o.id)}</b>: ${esc(parts.join(", "))}` }; }
+  if(o.op==="delete_goal"){ const g=getGoal(o.id); return { cls:"op-delete", ic:"🗑", text:`Delete goal <b>${esc(g?g.title:o.id)}</b>` }; }
+  if(o.op==="add_win"){ return { cls:"op-add", ic:"🏆", text:`Log win <b>${esc(o.text||"")}</b>` }; }
+  return { cls:"op-meta", ic:"?", text:esc(JSON.stringify(o)) };
+}
+function showAssistantPreview(instruction, result){
+  const ops = (result && result.operations) || [];
+  let body;
+  if(!ops.length){
+    body = `<p style="color:var(--text-dim);font-size:14px;">${esc(result && result.summary ? result.summary : "I couldn't find a change to make from that. Try rephrasing.")}</p>`;
+  } else {
+    body = (result.summary ? `<div class="op-summary">${esc(result.summary)}</div>` : "") +
+      `<div class="op-list">` + ops.map(o => { const L = opLabel(o); return `<div class="op-item ${L.cls}"><span class="op-ic">${L.ic}</span><span>${L.text}</span></div>`; }).join("") + `</div>`;
+  }
+  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack">
+    <div class="popover wide">
+      <span class="close-x" id="popClose">×</span>
+      <h3>Assistant — review changes</h3>
+      <div style="font-size:12px;color:var(--text-dim);font-style:italic;margin-bottom:6px;">You said: “${esc(instruction)}”</div>
+      ${body}
+      <div class="editor-actions">
+        <span class="spacer"></span>
+        <button class="btn-ghost" id="apCancel">Cancel</button>
+        ${ops.length ? `<button class="btn-primary" id="apApply">Apply ${ops.length} change${ops.length===1?'':'s'}</button>` : ""}
+      </div>
+    </div>
+  </div>`;
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
+  $("#apCancel").addEventListener("click", closePopover);
+  const ap = $("#apApply");
+  if(ap) ap.addEventListener("click", () => {
+    applyOperations(ops);
+    closePopover();
+    $("#assistantInput").value = "";
+    commitChanges();
+    showToast("Done ✓");
+  });
+}
+function sanitizeChanges(ch){
+  const out = {};
+  const allow = ["title","detail","owner","coveyQ","para","project","estimatedHours","suggestedDay","suggestedTimeBlock","deadlineHint","plannedStart"];
+  Object.keys(ch || {}).forEach(k => { if(allow.includes(k)) out[k] = ch[k]; });
+  if(out.coveyQ != null) out.coveyQ = Math.min(4, Math.max(1, Number(out.coveyQ) || 2));
+  if(out.estimatedHours != null) out.estimatedHours = Math.max(0, Number(out.estimatedHours) || 0);
+  if(out.plannedStart != null) out.plannedStart = Math.min(DAY_END - 0.25, Math.max(DAY_START, Number(out.plannedStart) || DAY_START));
+  if(out.owner && !["Adam","Brigitte","Shared"].includes(out.owner)) delete out.owner;
+  if(out.para && !["Project","Area","Resource","Archive"].includes(out.para)) delete out.para;
+  if(out.suggestedTimeBlock && !["morning","afternoon","evening","flexible"].includes(out.suggestedTimeBlock)) delete out.suggestedTimeBlock;
+  return out;
+}
+function normalizeNewTask(tk){
+  tk = tk || {};
+  const clean = sanitizeChanges(tk);
+  return Object.assign({
+    id: "t" + Date.now() + Math.floor(Math.random()*1000),
+    title: "Untitled task", detail: "", owner: "Shared", coveyQ: 2, para: "Project", project: "",
+    estimatedHours: 0.5, deadlineHint: "no deadline", suggestedDay: "", suggestedTimeBlock: "flexible", tags: []
+  }, clean, { title: (tk.title || "Untitled task") });
+}
+function applyOperations(ops){
+  (ops || []).forEach(o => {
+    try {
+      if(o.op==="update_task"){ const t = getTask(o.id); if(t) Object.assign(t, sanitizeChanges(o.changes)); }
+      else if(o.op==="add_task"){ addTask(normalizeNewTask(o.task)); }
+      else if(o.op==="delete_task"){ removeTask(o.id); }
+      else if(o.op==="set_one_thing"){ state.data.oneThing = String(o.value || ""); }
+      else if(o.op==="add_goal"){ addGoal(normalizeNewGoal(o.goal)); }
+      else if(o.op==="update_goal"){ const g = getGoal(o.id); if(g) Object.assign(g, sanitizeGoalChanges(o.changes)); }
+      else if(o.op==="delete_goal"){ removeGoal(o.id); }
+      else if(o.op==="add_win"){ state.data.wins = state.data.wins || []; state.data.wins.unshift({ id:"w"+Date.now()+Math.floor(Math.random()*1000), text:String(o.text||"").trim(), owner: ["Adam","Brigitte","Shared"].includes(o.owner)?o.owner:"Shared" }); }
+    } catch(e){ console.warn("operation failed", o, e); }
+  });
+}
+
+// voice input (Web Speech API — works in Chrome/Edge)
+function startVoice(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ showToast("Voice isn't supported here — try Chrome"); return; }
+  if(window._rec){ try { window._rec.stop(); } catch(_){} return; }
+  const rec = new SR();
+  window._rec = rec;
+  rec.lang = navigator.language || "en-US";
+  rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
+  const mic = $("#micBtn");
+  mic.classList.add("listening");
+  let finalText = "";
+  rec.onresult = e => {
+    let interim = "";
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const tr = e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalText += tr; else interim += tr;
+    }
+    $("#assistantInput").value = (finalText + interim).trim();
+  };
+  rec.onerror = ev => { if(ev.error !== "no-speech") showToast("Didn't catch that"); };
+  rec.onend = () => {
+    mic.classList.remove("listening");
+    window._rec = null;
+    if($("#assistantInput").value.trim()) runAssistant();
+  };
+  try { rec.start(); } catch(_){ mic.classList.remove("listening"); window._rec = null; }
+}
+$("#assistantSend").addEventListener("click", runAssistant);
+$("#assistantInput").addEventListener("keydown", e => { if(e.key === "Enter") runAssistant(); });
+$("#micBtn").addEventListener("click", startVoice);
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener("hashchange", ()=>{
+  try {
+    if(loadFromHash()){ renderDashboard(); showScreen("dashboard"); }
+  } catch(e){
+    console.error("Couldn't open that link's session.", e);
+    let key = null; try { key = localStorage.getItem(API_KEY_STORAGE); } catch(_){}
+    showScreen(key ? "input" : "setup");
+  }
+});
+
+// Last-resort safety net: if a script error ever leaves every screen hidden,
+// recover to a usable screen instead of showing a blank page.
+window.addEventListener("error", ()=>{
+  try {
+    const ids = ["setupScreen","inputScreen","dashboard"];
+    const allHidden = ids.every(id => {
+      const eln = document.getElementById(id);
+      return !eln || eln.classList.contains("hidden");
+    });
+    if(allHidden){
+      let key = null; try { key = localStorage.getItem(API_KEY_STORAGE); } catch(_){}
+      showScreen(key ? "input" : "setup");
+    }
+  } catch(_){}
+});
+
+boot();
+</script>
+</body>
+</html>
