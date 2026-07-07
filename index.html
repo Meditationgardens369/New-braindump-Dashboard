@@ -517,6 +517,48 @@
   .assistant-spin { display:flex; align-items:center; gap:10px; color: var(--text-dim); font-size: 13px; font-style: italic; padding: 4px; }
   .assistant-spin .spinner { width:18px; height:18px; border-width:2px; margin:0; }
 
+  /* ---------- Momentum tab ---------- */
+  .mo-hero {
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+    background: linear-gradient(135deg, #2a3320, #22281a);
+    border: 1px solid var(--sage); border-radius: 14px; padding: 20px 24px; margin-bottom: 8px;
+  }
+  .mo-hero-main { text-align: center; min-width: 90px; }
+  .mo-count { font-family: var(--serif); font-size: 46px; line-height: 1; color: var(--sage); }
+  .mo-count-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .mo-progress-wrap { flex: 1; min-width: 200px; }
+  .mo-progress-top { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+  .mo-bar { height: 12px; background: var(--bg-3); border-radius: 20px; overflow: hidden; }
+  .mo-bar-fill { height: 100%; background: linear-gradient(90deg, var(--sage), var(--amber)); border-radius: 20px; transition: width 0.4s ease; }
+  .mo-progress-sub { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+  .mo-empty { color: var(--text-dim); font-size: 14px; font-style: italic; background: var(--bg-2); border: 1px dashed var(--border); border-radius: 10px; padding: 16px 18px; }
+
+  .win-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .win-card { display: flex; gap: 10px; align-items: flex-start; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; position: relative; }
+  .win-card.done-task { border-left: 3px solid var(--sage); }
+  .win-ic { font-size: 16px; line-height: 1.3; }
+  .win-body { flex: 1; min-width: 0; }
+  .win-text { font-size: 14px; margin-bottom: 6px; }
+  .win-del { position: absolute; top: 6px; right: 6px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 5px; opacity: 0; }
+  .win-card:hover .win-del { opacity: 1; }
+  .win-del:hover { color: var(--q1); }
+
+  .next-list { display: flex; flex-direction: column; gap: 8px; }
+  .next-item { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+  .next-item:hover { border-color: var(--amber); }
+  .next-q { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; color: #1a1714; flex-shrink: 0; }
+  .next-q.q1 { background: var(--q1); } .next-q.q2 { background: var(--q2); } .next-q.q3 { background: var(--q3); } .next-q.q4 { background: var(--q4); }
+  .next-title { flex: 1; min-width: 0; font-size: 14px; }
+
+  .horizon-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .horizon-col { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .horizon-head { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .horizon-head .count { margin-left: auto; }
+  .goal-card { background: var(--bg-3); border: 1px solid var(--border); border-left: 3px solid var(--amber); border-radius: 9px; padding: 11px 13px; margin-bottom: 8px; cursor: pointer; }
+  .goal-card:hover { border-color: var(--amber); }
+  .goal-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .goal-detail { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+
   .key-indicator { font-size: 12px; color: var(--text-dim); }
 
   /* ---------- Responsive ---------- */
@@ -634,11 +676,13 @@
       <button class="tab active" data-tab="braindump">📋 Brain Dump</button>
       <button class="tab" data-tab="calendar">📅 Calendar</button>
       <button class="tab" data-tab="planner">⏱ Day Planner</button>
+      <button class="tab" data-tab="momentum">🚀 Momentum</button>
     </div>
 
     <div id="tab-braindump" class="tab-pane"></div>
     <div id="tab-calendar" class="tab-pane hidden"></div>
     <div id="tab-planner" class="tab-pane hidden"></div>
+    <div id="tab-momentum" class="tab-pane hidden"></div>
   </div>
 </div>
 
@@ -714,6 +758,22 @@ The JSON must follow this exact schema:
       "status": "active" | "stalled" | "upcoming",
       "taskIds": ["t1", "t2"]
     }
+  ],
+  "wins": [
+    {
+      "id": "string — e.g. w1",
+      "text": "string — an accomplishment, milestone, or thing already DONE that the person mentions (past tense / with pride / 'we finished', 'I sent', 'we landed')",
+      "owner": "Adam" | "Brigitte" | "Shared"
+    }
+  ],
+  "goals": [
+    {
+      "id": "string — e.g. g1",
+      "title": "string — a bigger-picture objective beyond a single task; where they want to be",
+      "detail": "string — context, can be empty",
+      "owner": "Adam" | "Brigitte" | "Shared",
+      "horizonDays": 30 | 60 | 90 | 180
+    }
   ]
 }
 Covey quadrant rules:
@@ -722,7 +782,9 @@ Q2 = not urgent + important (schedule it, growth/relationship/planning work)
 Q3 = urgent + not important (question whether it really needs doing)
 Q4 = not urgent + not important (eliminate or ignore)
 When estimating hours, be realistic. A WhatsApp message = 0.25h. A video script = 2h. A client call = 1h. A full content piece = 3h.
-When suggesting a day, spread tasks across the 21-day window. Do not pile everything on day 1. Respect the deadlineHint field. Put Q1 tasks in the first 2 days. Q2 tasks spread across the week and beyond.`;
+When suggesting a day, spread tasks across the 21-day window. Do not pile everything on day 1. Respect the deadlineHint field. Put Q1 tasks in the first 2 days. Q2 tasks spread across the week and beyond.
+Wins: capture anything the person describes as already accomplished or a milestone reached — these fuel a sense of momentum. If nothing is clearly done, return an empty array.
+Goals: capture medium/long-term aims (not single tasks). Assign horizonDays by scope: 30 = this month, 60 = about two months, 90 = this quarter, 180 = longer term. If none are expressed, return an empty array.`;
 
 let state = {
   data: null,            // parsed JSON response
@@ -1287,17 +1349,23 @@ $("#tabs").addEventListener("click", e=>{
   const b = e.target.closest(".tab"); if(!b) return;
   state.activeTab = b.dataset.tab;
   $all("#tabs .tab").forEach(t=>t.classList.toggle("active", t===b));
-  $("#tab-braindump").classList.toggle("hidden", state.activeTab!=="braindump");
-  $("#tab-calendar").classList.toggle("hidden", state.activeTab!=="calendar");
-  $("#tab-planner").classList.toggle("hidden", state.activeTab!=="planner");
+  updateTabPanes();
   renderActiveTab();
   writeHash();
 });
+
+function updateTabPanes(){
+  ["braindump","calendar","planner","momentum"].forEach(name=>{
+    const pane = document.getElementById("tab-"+name);
+    if(pane) pane.classList.toggle("hidden", state.activeTab!==name);
+  });
+}
 
 function renderActiveTab(){
   if(state.activeTab==="braindump") renderBrainDump();
   else if(state.activeTab==="calendar") renderCalendar();
   else if(state.activeTab==="planner") renderPlanner();
+  else if(state.activeTab==="momentum") renderMomentum();
 }
 
 /* ============================================================
@@ -1318,9 +1386,7 @@ function renderDashboard(){
   $all("#ownerToggle button").forEach(x=>x.classList.toggle("active", x.dataset.owner===state.ownerFilter));
   // sync tab active states
   $all("#tabs .tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===state.activeTab));
-  $("#tab-braindump").classList.toggle("hidden", state.activeTab!=="braindump");
-  $("#tab-calendar").classList.toggle("hidden", state.activeTab!=="calendar");
-  $("#tab-planner").classList.toggle("hidden", state.activeTab!=="planner");
+  updateTabPanes();
   renderActiveTab();
 }
 
@@ -1776,6 +1842,170 @@ function plannerColumnHTML(owner, cls, iso){
   </div>`;
 }
 
+/* ---------- TAB 4: MOMENTUM ---------- */
+const HORIZONS = [
+  { d:30,  label:"Next 30 days" },
+  { d:60,  label:"~60 days" },
+  { d:90,  label:"90 days" },
+  { d:180, label:"Longer term" }
+];
+function normHorizon(h){
+  h = Number(h) || 30;
+  if(h <= 30) return 30;
+  if(h <= 60) return 60;
+  if(h <= 90) return 90;
+  return 180;
+}
+function horizonLabel(d){ const h = HORIZONS.find(x => x.d === normHorizon(d)); return h ? h.label : d + " days"; }
+
+function renderMomentum(){
+  const d = state.data;
+  const pane = $("#tab-momentum");
+  const allTasks = (d.tasks || []).filter(t => ownerMatch(t.owner));
+  const doneTasks = allTasks.filter(t => state.done[t.id]);
+  const openTasks = allTasks.filter(t => !state.done[t.id]);
+  const total = allTasks.length;
+  const pct = total ? Math.round(doneTasks.length / total * 100) : 0;
+
+  let html = "";
+
+  // hero + progress
+  html += `<div class="mo-hero">
+    <div class="mo-hero-main">
+      <div class="mo-count">${doneTasks.length}</div>
+      <div class="mo-count-label">task${doneTasks.length===1?'':'s'} done${state.ownerFilter==='all'?'':' · '+esc(state.ownerFilter)}</div>
+    </div>
+    <div class="mo-progress-wrap">
+      <div class="mo-progress-top"><span>Progress this session</span><span>${pct}%</span></div>
+      <div class="mo-bar"><div class="mo-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mo-progress-sub">${doneTasks.length} of ${total} done · ${openTasks.length} still to go</div>
+    </div>
+  </div>`;
+
+  // WINS
+  const aiWins = (d.wins || []).filter(w => ownerMatch(w.owner));
+  html += `<div class="section-title">🏆 Wins &amp; Achievements
+    <span class="view-switch"><button class="icon-btn" id="addWinBtn">+ Add win</button></span></div>`;
+  const cards = [];
+  doneTasks.forEach(t => cards.push(`<div class="win-card done-task">
+    <span class="win-ic">✓</span>
+    <div class="win-body"><div class="win-text">${esc(t.title)}</div><span class="badge owner-${esc(t.owner)}">${esc(t.owner)}</span></div>
+  </div>`));
+  aiWins.forEach(w => cards.push(`<div class="win-card">
+    <span class="win-ic">⭐</span>
+    <div class="win-body"><div class="win-text">${esc(w.text)}</div><span class="badge owner-${esc(w.owner||'Shared')}">${esc(w.owner||'Shared')}</span></div>
+    <button class="win-del" data-delwin="${esc(w.id)}" title="Remove">✕</button>
+  </div>`));
+  html += cards.length ? `<div class="win-grid">${cards.join("")}</div>`
+    : `<div class="mo-empty">No wins logged yet. Tick off tasks in the Brain Dump tab, or add a win — every step forward counts.</div>`;
+
+  // WHAT'S NEXT
+  const nextTasks = openTasks.slice().sort((a,b)=>{
+    const qa=a.coveyQ||9, qb=b.coveyQ||9; if(qa!==qb) return qa-qb;
+    const da=a.suggestedDay||"9999-99-99", db=b.suggestedDay||"9999-99-99";
+    return da<db?-1:da>db?1:0;
+  }).slice(0,6);
+  html += `<div class="section-title">⏭️ What's Next</div>`;
+  html += nextTasks.length ? `<div class="next-list">` + nextTasks.map(t=>`
+    <div class="next-item" data-editnext="${esc(t.id)}">
+      <span class="next-q q${t.coveyQ||2}">Q${t.coveyQ||2}</span>
+      <span class="next-title">${esc(t.title)}</span>
+      <span class="badge owner-${esc(t.owner)}">${esc(t.owner)}</span>
+      ${t.suggestedDay?`<span class="badge">${esc(dayName(t.suggestedDay))} ${dayNum(t.suggestedDay)}</span>`:""}
+    </div>`).join("") + `</div>`
+    : `<div class="mo-empty">Nothing open — you're all caught up. 🎉</div>`;
+
+  // HORIZONS / GOALS
+  const goals = (d.goals || []).filter(g => ownerMatch(g.owner));
+  html += `<div class="section-title">🎯 Horizons
+    <span class="view-switch"><button class="icon-btn" id="addGoalBtn">+ Add goal</button></span></div>`;
+  if(!goals.length){
+    html += `<div class="mo-empty">No goals set yet. Add where you want to be in the next month, quarter, or beyond — or just tell the assistant “add a goal to …”.</div>`;
+  } else {
+    html += `<div class="horizon-cols">`;
+    HORIZONS.forEach(h=>{
+      const gs = goals.filter(g => normHorizon(g.horizonDays) === h.d);
+      if(!gs.length) return;
+      html += `<div class="horizon-col">
+        <div class="horizon-head">${h.label}<span class="count badge">${gs.length}</span></div>
+        ${gs.map(g=>`<div class="goal-card" data-editgoal="${esc(g.id)}">
+          <div class="goal-title">${esc(g.title)}</div>
+          ${g.detail?`<div class="goal-detail">${esc(g.detail)}</div>`:""}
+          <span class="badge owner-${esc(g.owner||'Shared')}">${esc(g.owner||'Shared')}</span>
+        </div>`).join("")}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  pane.innerHTML = html;
+
+  const ag = $("#addGoalBtn", pane); if(ag) ag.addEventListener("click", ()=> openGoalEditor(null));
+  const aw = $("#addWinBtn", pane); if(aw) aw.addEventListener("click", addWinQuick);
+  $all("[data-editgoal]", pane).forEach(c => c.addEventListener("click", ()=> openGoalEditor(c.dataset.editgoal)));
+  $all("[data-editnext]", pane).forEach(c => c.addEventListener("click", ()=> openTaskEditor(c.dataset.editnext)));
+  $all("[data-delwin]", pane).forEach(b => b.addEventListener("click", e => { e.stopPropagation(); removeWin(b.dataset.delwin); commitChanges(); showToast("Removed"); }));
+}
+
+/* ---------- Goals & wins mutation ---------- */
+function getGoal(id){ return ((state.data && state.data.goals) || []).find(g => g.id === id); }
+function addGoal(g){ state.data.goals = state.data.goals || []; state.data.goals.push(g); }
+function removeGoal(id){ if(state.data) state.data.goals = (state.data.goals || []).filter(g => g.id !== id); }
+function removeWin(id){ if(state.data) state.data.wins = (state.data.wins || []).filter(w => w.id !== id); }
+function addWinQuick(){
+  const text = prompt("Add a win / achievement:");
+  if(!text || !text.trim()) return;
+  const owner = (state.ownerFilter === "Adam" || state.ownerFilter === "Brigitte") ? state.ownerFilter : "Shared";
+  state.data.wins = state.data.wins || [];
+  state.data.wins.unshift({ id: "w" + Date.now(), text: text.trim(), owner });
+  commitChanges();
+  showToast("Win added 🎉");
+}
+function openGoalEditor(id){
+  if(!state.data) return;
+  const isNew = !id;
+  const src = isNew ? { id:"g"+Date.now(), title:"", detail:"", owner:"Shared", horizonDays:90 } : getGoal(id);
+  if(!src) return;
+  const g = Object.assign({}, src);
+  closePopover();
+  const sel = (val, opts) => opts.map(o => `<option value="${o.v}" ${String(o.v)===String(val)?'selected':''}>${esc(o.l)}</option>`).join("");
+  const ownerOpts = sel(g.owner, [{v:"Adam",l:"Adam"},{v:"Brigitte",l:"Brigitte"},{v:"Shared",l:"Shared"}]);
+  const horizonOpts = sel(normHorizon(g.horizonDays), HORIZONS.map(h=>({v:h.d,l:h.label})));
+  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack"><div class="popover wide">
+    <span class="close-x" id="popClose">×</span>
+    <h3>${isNew?"Add goal":"Edit goal"}</h3>
+    <div class="editor-grid">
+      <div class="full"><label>Goal</label><input id="goTitle" type="text" value="${esc(g.title)}" placeholder="Where do you want to be?"></div>
+      <div class="full"><label>Notes</label><textarea id="goDetail" placeholder="Why it matters / what it looks like…">${esc(g.detail||"")}</textarea></div>
+      <div><label>Owner</label><select id="goOwner">${ownerOpts}</select></div>
+      <div><label>Horizon</label><select id="goHorizon">${horizonOpts}</select></div>
+    </div>
+    <div class="editor-actions">
+      ${isNew?"":`<button class="btn-danger" id="goDelete">Delete</button>`}
+      <span class="spacer"></span>
+      <button class="btn-ghost" id="goCancel">Cancel</button>
+      <button class="btn-primary" id="goSave">${isNew?"Add goal":"Save"}</button>
+    </div>
+  </div></div>`;
+  $("#popClose").addEventListener("click", closePopover);
+  $("#popBack").addEventListener("click", e=>{ if(e.target.id==="popBack") closePopover(); });
+  $("#goCancel").addEventListener("click", closePopover);
+  $("#goSave").addEventListener("click", ()=>{
+    const changes = {
+      title: $("#goTitle").value.trim() || "Untitled goal",
+      detail: $("#goDetail").value.trim(),
+      owner: $("#goOwner").value,
+      horizonDays: Number($("#goHorizon").value)
+    };
+    if(isNew) addGoal(Object.assign(g, changes));
+    else Object.assign(getGoal(id), changes);
+    closePopover(); commitChanges(); showToast(isNew?"Goal added ✓":"Saved ✓");
+  });
+  const del = $("#goDelete");
+  if(del) del.addEventListener("click", ()=>{ if(confirm("Delete this goal?")){ removeGoal(id); closePopover(); commitChanges(); showToast("Goal deleted"); } });
+  if(isNew) setTimeout(()=>{ const t=$("#goTitle"); if(t) t.focus(); }, 30);
+}
+
 /* ============================================================
    TASK MUTATION HELPERS
    ============================================================ */
@@ -1865,242 +2095,4 @@ function openTaskEditor(id){
       removeTask(id);
       closePopover();
       commitChanges();
-      showToast("Task deleted");
-    }
-  });
-  if(isNew) setTimeout(() => { const ti = $("#edTitle"); if(ti) ti.focus(); }, 30);
-}
-
-/* ============================================================
-   DRAG & DROP (move tasks between quadrants / PARA / days)
-   ============================================================ */
-let _dragTaskId = null;
-function dropZoneOf(target){ return target.closest && target.closest("[data-drop-q],[data-drop-para],[data-drop-day]"); }
-document.addEventListener("dragstart", e => {
-  const src = e.target.closest && e.target.closest("[data-drag-task]");
-  if(!src) return;
-  _dragTaskId = src.getAttribute("data-drag-task");
-  if(e.dataTransfer){ e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", _dragTaskId); } catch(_){} }
-  src.classList.add("dragging");
-});
-document.addEventListener("dragend", e => {
-  const src = e.target.closest && e.target.closest("[data-drag-task]"); if(src) src.classList.remove("dragging");
-  $all(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
-  _dragTaskId = null;
-});
-document.addEventListener("dragover", e => {
-  if(_dragTaskId == null) return;
-  const zone = dropZoneOf(e.target); if(!zone) return;
-  e.preventDefault();
-  if(e.dataTransfer) e.dataTransfer.dropEffect = "move";
-});
-document.addEventListener("dragenter", e => {
-  if(_dragTaskId == null) return;
-  const zone = dropZoneOf(e.target); if(zone) zone.classList.add("drop-hover");
-});
-document.addEventListener("dragleave", e => {
-  const zone = dropZoneOf(e.target);
-  if(zone && !zone.contains(e.relatedTarget)) zone.classList.remove("drop-hover");
-});
-document.addEventListener("drop", e => {
-  if(_dragTaskId == null) return;
-  const zone = dropZoneOf(e.target); if(!zone) return;
-  e.preventDefault();
-  const t = getTask(_dragTaskId);
-  if(t){
-    let moved = false;
-    if(zone.hasAttribute("data-drop-q")){ const nv = Number(zone.getAttribute("data-drop-q")); if(t.coveyQ !== nv){ t.coveyQ = nv; moved = true; } }
-    else if(zone.hasAttribute("data-drop-para")){ const nv = zone.getAttribute("data-drop-para"); if(t.para !== nv){ t.para = nv; moved = true; } }
-    else if(zone.hasAttribute("data-drop-day")){ const nv = zone.getAttribute("data-drop-day"); if(t.suggestedDay !== nv){ t.suggestedDay = nv; moved = true; } }
-    if(moved){ commitChanges(); showToast("Moved ✓"); }
-  }
-  $all(".drop-hover").forEach(n => n.classList.remove("drop-hover"));
-  _dragTaskId = null;
-});
-
-/* ============================================================
-   AI ASSISTANT (voice/text → preview → apply)
-   ============================================================ */
-const ASSISTANT_SYSTEM = `You are an editing assistant for a personal task dashboard used by Adam and Brigitte, a couple in Portugal. You receive the current dashboard as JSON and a short instruction (often transcribed from speech, so it may be casual or slightly misheard). Translate the instruction into a list of edit operations. Return ONLY a single raw JSON object — no markdown, no code fences, no prose outside it:
-{
-  "summary": "one short plain-English sentence describing what you will change",
-  "operations": [ ... ]
-}
-Allowed operations:
-{ "op":"update_task", "id":"<existing task id>", "changes":{ one or more of: "title","detail","owner","coveyQ","para","project","estimatedHours","suggestedDay","suggestedTimeBlock","deadlineHint" } }
-{ "op":"add_task", "task":{ "title":..., "owner":..., "coveyQ":..., "para":..., "project":..., "estimatedHours":..., "suggestedDay":..., "suggestedTimeBlock":..., "deadlineHint":..., "detail":... } }
-{ "op":"delete_task", "id":"<existing task id>" }
-{ "op":"set_one_thing", "value":"<text>" }
-Rules:
-- Identify the task the user means by comparing their words to the provided task titles, and use that task's EXACT id.
-- Enums: owner is "Adam","Brigitte" or "Shared"; coveyQ is 1,2,3 or 4; para is "Project","Area","Resource" or "Archive"; suggestedTimeBlock is "morning","afternoon","evening" or "flexible".
-- All dates must be "YYYY-MM-DD" and fall within the calendar window. Resolve relative dates ("today","tomorrow","Friday","next week") using the provided today's date.
-- For a new task use sensible defaults: owner "Shared" unless implied, coveyQ 2, para "Project", estimatedHours 0.5, suggestedTimeBlock "flexible". Do not invent an id.
-- Only include operations the user actually asked for; keep changes minimal. If you cannot map the instruction to any operation, return an empty operations array and say why in summary.`;
-
-function setAssistantBusy(b){
-  $("#assistantBar").classList.toggle("busy", b);
-  $("#assistantSend").textContent = b ? "…" : "Send";
-}
-async function askAssistant(instruction, key){
-  const d = state.data;
-  const tasksBrief = (d.tasks || []).map(t => ({
-    id:t.id, title:t.title, owner:t.owner, coveyQ:t.coveyQ, para:t.para, project:t.project,
-    estimatedHours:t.estimatedHours, suggestedDay:t.suggestedDay, suggestedTimeBlock:t.suggestedTimeBlock,
-    deadlineHint:t.deadlineHint, detail:t.detail
-  }));
-  const ctx = { today: todayISO(), calendarWindow: { start: state.startDate, end: state.endDate }, oneThing: d.oneThing, tasks: tasksBrief };
-  const userMessage = `CURRENT DASHBOARD (JSON):\n${JSON.stringify(ctx)}\n\nUSER INSTRUCTION:\n${instruction}`;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "content-type":"application/json", "x-api-key":key, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" },
-    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: ASSISTANT_SYSTEM, messages: [{ role:"user", content: userMessage }] })
-  });
-  if(!res.ok) throw new Error("API " + res.status);
-  const json = await res.json();
-  let text = (json.content && json.content[0] && json.content[0].text) || "";
-  text = stripFences(text);
-  let parsed = null;
-  try { parsed = JSON.parse(text); }
-  catch(_){ const m = text.match(/\{[\s\S]*\}/); if(m){ try { parsed = JSON.parse(m[0]); } catch(e){} } }
-  return parsed;
-}
-async function runAssistant(){
-  if(!state.data){ showToast("Open a session first"); return; }
-  const instruction = $("#assistantInput").value.trim();
-  if(!instruction) return;
-  const key = localStorage.getItem(API_KEY_STORAGE);
-  if(!key){ showToast("Set your API key (🔑) first"); return; }
-  setAssistantBusy(true);
-  try {
-    const result = await askAssistant(instruction, key);
-    setAssistantBusy(false);
-    if(!result){ showToast("Couldn't read the reply — try again"); return; }
-    showAssistantPreview(instruction, result);
-  } catch(e){
-    setAssistantBusy(false);
-    console.error(e);
-    showToast("Assistant couldn't reach the API");
-  }
-}
-function prettyField(k){ return ({title:"Title",detail:"Notes",owner:"Owner",coveyQ:"Priority",para:"PARA",project:"Project",estimatedHours:"Hours",suggestedDay:"Day",suggestedTimeBlock:"Time"})[k] || k; }
-function prettyVal(k,v){ if(k==="suggestedDay" && v) return fmtLong(v); if(k==="coveyQ") return "Q"+v; if(k==="estimatedHours") return v+"h"; return String(v); }
-function opLabel(o){
-  if(o.op==="update_task"){
-    const t = getTask(o.id); const name = t ? t.title : o.id;
-    const parts = Object.entries(o.changes||{}).map(([k,v]) => `${prettyField(k)} → ${prettyVal(k,v)}`);
-    return { cls:"op-update", ic:"✎", text:`<b>${esc(name)}</b>: ${esc(parts.join(", "))}` };
-  }
-  if(o.op==="add_task"){ const tk=o.task||{}; return { cls:"op-add", ic:"＋", text:`Add <b>${esc(tk.title||"task")}</b> (${esc(tk.owner||"Shared")}, Q${esc(tk.coveyQ||2)}${tk.suggestedDay?`, ${esc(fmtLong(tk.suggestedDay))}`:""})` }; }
-  if(o.op==="delete_task"){ const t=getTask(o.id); return { cls:"op-delete", ic:"🗑", text:`Delete <b>${esc(t?t.title:o.id)}</b>` }; }
-  if(o.op==="set_one_thing"){ return { cls:"op-meta", ic:"★", text:`Set One Thing → <b>${esc(o.value||"")}</b>` }; }
-  return { cls:"op-meta", ic:"?", text:esc(JSON.stringify(o)) };
-}
-function showAssistantPreview(instruction, result){
-  const ops = (result && result.operations) || [];
-  let body;
-  if(!ops.length){
-    body = `<p style="color:var(--text-dim);font-size:14px;">${esc(result && result.summary ? result.summary : "I couldn't find a change to make from that. Try rephrasing.")}</p>`;
-  } else {
-    body = (result.summary ? `<div class="op-summary">${esc(result.summary)}</div>` : "") +
-      `<div class="op-list">` + ops.map(o => { const L = opLabel(o); return `<div class="op-item ${L.cls}"><span class="op-ic">${L.ic}</span><span>${L.text}</span></div>`; }).join("") + `</div>`;
-  }
-  $("#popoverMount").innerHTML = `<div class="popover-backdrop" id="popBack">
-    <div class="popover wide">
-      <span class="close-x" id="popClose">×</span>
-      <h3>Assistant — review changes</h3>
-      <div style="font-size:12px;color:var(--text-dim);font-style:italic;margin-bottom:6px;">You said: “${esc(instruction)}”</div>
-      ${body}
-      <div class="editor-actions">
-        <span class="spacer"></span>
-        <button class="btn-ghost" id="apCancel">Cancel</button>
-        ${ops.length ? `<button class="btn-primary" id="apApply">Apply ${ops.length} change${ops.length===1?'':'s'}</button>` : ""}
-      </div>
-    </div>
-  </div>`;
-  $("#popClose").addEventListener("click", closePopover);
-  $("#popBack").addEventListener("click", e => { if(e.target.id === "popBack") closePopover(); });
-  $("#apCancel").addEventListener("click", closePopover);
-  const ap = $("#apApply");
-  if(ap) ap.addEventListener("click", () => {
-    applyOperations(ops);
-    closePopover();
-    $("#assistantInput").value = "";
-    commitChanges();
-    showToast("Done ✓");
-  });
-}
-function sanitizeChanges(ch){
-  const out = {};
-  const allow = ["title","detail","owner","coveyQ","para","project","estimatedHours","suggestedDay","suggestedTimeBlock","deadlineHint"];
-  Object.keys(ch || {}).forEach(k => { if(allow.includes(k)) out[k] = ch[k]; });
-  if(out.coveyQ != null) out.coveyQ = Math.min(4, Math.max(1, Number(out.coveyQ) || 2));
-  if(out.estimatedHours != null) out.estimatedHours = Math.max(0, Number(out.estimatedHours) || 0);
-  if(out.owner && !["Adam","Brigitte","Shared"].includes(out.owner)) delete out.owner;
-  if(out.para && !["Project","Area","Resource","Archive"].includes(out.para)) delete out.para;
-  if(out.suggestedTimeBlock && !["morning","afternoon","evening","flexible"].includes(out.suggestedTimeBlock)) delete out.suggestedTimeBlock;
-  return out;
-}
-function normalizeNewTask(tk){
-  tk = tk || {};
-  const clean = sanitizeChanges(tk);
-  return Object.assign({
-    id: "t" + Date.now() + Math.floor(Math.random()*1000),
-    title: "Untitled task", detail: "", owner: "Shared", coveyQ: 2, para: "Project", project: "",
-    estimatedHours: 0.5, deadlineHint: "no deadline", suggestedDay: "", suggestedTimeBlock: "flexible", tags: []
-  }, clean, { title: (tk.title || "Untitled task") });
-}
-function applyOperations(ops){
-  (ops || []).forEach(o => {
-    try {
-      if(o.op==="update_task"){ const t = getTask(o.id); if(t) Object.assign(t, sanitizeChanges(o.changes)); }
-      else if(o.op==="add_task"){ addTask(normalizeNewTask(o.task)); }
-      else if(o.op==="delete_task"){ removeTask(o.id); }
-      else if(o.op==="set_one_thing"){ state.data.oneThing = String(o.value || ""); }
-    } catch(e){ console.warn("operation failed", o, e); }
-  });
-}
-
-// voice input (Web Speech API — works in Chrome/Edge)
-function startVoice(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ showToast("Voice isn't supported here — try Chrome"); return; }
-  if(window._rec){ try { window._rec.stop(); } catch(_){} return; }
-  const rec = new SR();
-  window._rec = rec;
-  rec.lang = navigator.language || "en-US";
-  rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = false;
-  const mic = $("#micBtn");
-  mic.classList.add("listening");
-  let finalText = "";
-  rec.onresult = e => {
-    let interim = "";
-    for(let i = e.resultIndex; i < e.results.length; i++){
-      const tr = e.results[i][0].transcript;
-      if(e.results[i].isFinal) finalText += tr; else interim += tr;
-    }
-    $("#assistantInput").value = (finalText + interim).trim();
-  };
-  rec.onerror = ev => { if(ev.error !== "no-speech") showToast("Didn't catch that"); };
-  rec.onend = () => {
-    mic.classList.remove("listening");
-    window._rec = null;
-    if($("#assistantInput").value.trim()) runAssistant();
-  };
-  try { rec.start(); } catch(_){ mic.classList.remove("listening"); window._rec = null; }
-}
-$("#assistantSend").addEventListener("click", runAssistant);
-$("#assistantInput").addEventListener("keydown", e => { if(e.key === "Enter") runAssistant(); });
-$("#micBtn").addEventListener("click", startVoice);
-
-/* ============================================================
-   INIT
-   ============================================================ */
-window.addEventListener("hashchange", ()=>{
-  if(loadFromHash()){ renderDashboard(); showScreen("dashboard"); }
-});
-
-boot();
-</script>
-</body>
-</html>
+      showToast("Task deleted")
